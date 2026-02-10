@@ -1,4 +1,4 @@
-// FILE: app/api/calander/container/[containerId]/route.js
+// app/api/calander/container/[containerId]/route.js
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getDb } from "@/lib/mongodb";
@@ -6,12 +6,11 @@ import { getSession } from "@/lib/session";
 
 export const runtime = "nodejs";
 
-// ✅ Add creator username on customer via customer.createdByUserId -> users.username
 const CREATOR_USERNAME_STAGES = [
   {
     $lookup: {
       from: "users",
-      let: { uid: "$customer.createdByUserId" }, // stored as String in customer
+      let: { uid: "$customer.createdByUserId" },
       pipeline: [
         { $match: { $expr: { $eq: [{ $toString: "$_id" }, "$$uid"] } } },
         { $project: { _id: 0, username: 1 } },
@@ -42,6 +41,7 @@ export async function GET(req, { params }) {
 
   const url = new URL(req.url);
   const includeReserved = url.searchParams.get("includeReserved") === "1";
+  const includeHistory = url.searchParams.get("includeHistory") === "1";
 
   const container = await db
     .collection("calendarContainers")
@@ -62,10 +62,7 @@ export async function GET(req, { params }) {
         },
       },
       { $unwind: "$customer" },
-
-      // ✅ NEW: Attach customer.createdByUsername
       ...CREATOR_USERNAME_STAGES,
-
       { $sort: { createdAt: 1 } },
       {
         $project: {
@@ -74,21 +71,17 @@ export async function GET(req, { params }) {
           customerId: 1,
           status: 1,
           note: 1,
-
           kind: 1,
           pairId: 1,
           roleInPair: 1,
-
-          // meeting occupy fields
           occupiedMode: 1,
           occupiedDate: 1,
           occupiedContainerId: 1,
           meetingDecision: 1,
-
+          cardStatus: 1,
           addedByUserId: 1,
           createdAt: 1,
           updatedAt: 1,
-
           customer: 1,
         },
       },
@@ -116,10 +109,7 @@ export async function GET(req, { params }) {
           },
         },
         { $unwind: "$customer" },
-
-        // ✅ NEW: Attach customer.createdByUsername (also for reserved)
         ...CREATOR_USERNAME_STAGES,
-
         { $sort: { createdAt: 1 } },
         {
           $project: {
@@ -128,20 +118,16 @@ export async function GET(req, { params }) {
             customerId: 1,
             status: 1,
             note: 1,
-
             kind: 1,
             pairId: 1,
             roleInPair: 1,
-
             occupiedMode: 1,
             occupiedDate: 1,
             occupiedContainerId: 1,
             meetingDecision: 1,
-
             addedByUserId: 1,
             createdAt: 1,
             updatedAt: 1,
-
             customer: 1,
           },
         },
@@ -149,5 +135,15 @@ export async function GET(req, { params }) {
       .toArray();
   }
 
-  return NextResponse.json({ container, assignments, reserved });
+  // ✅ TASK 2: Load history records for MEETING containers
+  let history = [];
+  if (includeHistory && container.mode === "MEETING") {
+    history = await db
+      .collection("calendarAssignmentHistory")
+      .find({ containerId: cId })
+      .sort({ confirmedAt: -1 })
+      .toArray();
+  }
+
+  return NextResponse.json({ container, assignments, reserved, history });
 }

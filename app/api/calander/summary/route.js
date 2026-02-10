@@ -1,3 +1,4 @@
+// app/api/calander/summary/route.js
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/mongodb";
 import { getSession } from "@/lib/session";
@@ -43,10 +44,24 @@ export async function GET(req) {
         as: "genders"
       }
     },
+    // ✅ TASK 2: Also count history records for MEETING containers
+    {
+      $lookup: {
+        from: "calendarAssignmentHistory",
+        let: { cid: "$_id" },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$containerId", "$$cid"] } } },
+          { $count: "count" },
+        ],
+        as: "historyCount"
+      }
+    },
     {
       $project: {
         date: 1,
+        mode: 1,
         genders: 1,
+        historyCount: { $ifNull: [{ $arrayElemAt: ["$historyCount.count", 0] }, 0] },
       }
     }
   ]).toArray();
@@ -57,7 +72,11 @@ export async function GET(req) {
     const female = r.genders.filter(x => x.gender === "FEMALE").length;
     const other = r.genders.filter(x => x.gender === "OTHER").length;
     const total = male + female + other;
-    map[r.date] = { total, male, female, other };
+    map[r.date] = {
+      total, male, female, other,
+      // ✅ History count for meeting containers
+      history: r.historyCount || 0,
+    };
   }
 
   return NextResponse.json({ map });

@@ -1,3 +1,4 @@
+// app/api/calander/container/[containerId]/assignments/[assignmentId]/confirm/route.js
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getDb } from "@/lib/mongodb";
@@ -87,6 +88,9 @@ export async function POST(req, { params }) {
       whatsappNumber: 1,
       phoneCountryCode: 1,
       phoneNumber: 1,
+      gender: 1,
+      address: 1,
+      age: 1,
     })
     .toArray();
 
@@ -138,7 +142,56 @@ export async function POST(req, { params }) {
     );
   }
 
-  // ✅ Move assignments to DIKSHA + store WA logs
+  // ✅ TASK 2: Create history snapshots BEFORE moving cards
+  // These will remain in the MEETING container as permanent records
+  const historyDocs = group.map((a) => {
+    const cust = customerById.get(String(a.customerId));
+    const meta = sentMap.get(String(a.customerId));
+    return {
+      // Reference back to original assignment
+      originalAssignmentId: a._id,
+      containerId: ctnId, // stays in MEETING container
+      customerId: a.customerId,
+      status: "CONFIRMED_OUT", // history status — not IN_CONTAINER
+
+      // Snapshot of customer info at time of confirm
+      customerSnapshot: {
+        name: cust?.name || "",
+        gender: cust?.gender || "OTHER",
+        age: cust?.age || "",
+        address: cust?.address || "",
+        rollNo: cust?.rollNo || "",
+      },
+
+      // Assignment details
+      kind: a.kind || "SINGLE",
+      pairId: a.pairId || null,
+      roleInPair: a.roleInPair || null,
+
+      // Meeting → Diksha details
+      occupiedDate: a.occupiedDate,
+      occupiedContainerId: a.occupiedContainerId,
+      meetingDecision: "CONFIRMED",
+      confirmedAt: now,
+      confirmedByUserId: session.userId,
+      confirmedByLabel: actorLabel,
+
+      // WhatsApp log
+      whatsappConfirmSid: meta?.sid || null,
+      whatsappConfirmTo: meta?.to || null,
+
+      // Timestamps
+      originalCreatedAt: a.createdAt,
+      createdAt: now,
+      updatedAt: now,
+    };
+  });
+
+  if (historyDocs.length > 0) {
+    await db.collection("calendarAssignmentHistory").insertMany(historyDocs);
+  }
+
+  // ✅ Move assignments to DIKSHA + store WA logs (EXISTING LOGIC — unchanged)
   const bulk = group.map((a) => {
     const meta = sentMap.get(String(a.customerId));
     return {
@@ -192,9 +245,10 @@ export async function POST(req, { params }) {
         kind: base.kind,
         pairId: base.pairId ? String(base.pairId) : null,
         whatsappConfirmSid: sentMap.get(String(cid))?.sid || null,
+        historyRecordCreated: true,
       },
     });
   }
 
-  return NextResponse.json({ ok: true, moved: custIds.length });
+  return NextResponse.json({ ok: true, moved: custIds.length, historyCreated: historyDocs.length });
 }
