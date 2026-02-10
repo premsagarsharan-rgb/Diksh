@@ -59,7 +59,7 @@ export async function POST(req, { params }) {
   const container = await db.collection("calendarContainers").findOne({ _id: ctnId });
   if (!container) return NextResponse.json({ error: "Container not found" }, { status: 404 });
 
-  // ✅ NEW RULE: MEETING always requires occupyDate
+  // MEETING always requires occupyDate
   if (container.mode === "MEETING" && occupyDate == null) {
     return NextResponse.json({ error: "OCCUPY_REQUIRED" }, { status: 400 });
   }
@@ -82,7 +82,7 @@ export async function POST(req, { params }) {
     }
   }
 
-  // ✅ MEETING occupy validation + DIKSHA capacity check
+  // MEETING occupy validation + DIKSHA capacity check
   let occupiedContainerId = null;
   let occupiedMode = null;
   let occupiedDate = null;
@@ -95,7 +95,15 @@ export async function POST(req, { params }) {
     if (!isDateKey(occupyDate)) return NextResponse.json({ error: "Invalid occupyDate (YYYY-MM-DD)" }, { status: 400 });
 
     const todayKey = ymdLocal(new Date());
-    if (occupyDate <= todayKey) return NextResponse.json({ error: "occupyDate must be future date" }, { status: 400 });
+    if (occupyDate < todayKey) return NextResponse.json({ error: "occupyDate must be today or future date" }, { status: 400 });
+
+    // ✅ UPDATED RULE: occupyDate must be >= meeting container date (SAME allowed)
+    if (container.date && occupyDate < container.date) {
+      return NextResponse.json(
+        { error: "OCCUPY_MUST_BE_AFTER_MEETING", message: `Occupy date (${occupyDate}) must be same or after meeting date (${container.date})` },
+        { status: 400 }
+      );
+    }
 
     const key = { date: occupyDate, mode: "DIKSHA" };
     await db.collection("calendarContainers").updateOne(
@@ -143,7 +151,7 @@ export async function POST(req, { params }) {
     }
   }
 
-  // ✅ NEW RULE: direct DIKSHA push allowed only if ALL eligible
+  // direct DIKSHA push allowed only if ALL eligible
   if (container.mode === "DIKSHA") {
     const bad = customers.filter((c) => c?.dikshaEligible !== true);
     if (bad.length) {

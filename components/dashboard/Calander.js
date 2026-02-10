@@ -98,7 +98,7 @@ export default function Calander({ role }) {
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectTargetSeq, setRejectTargetSeq] = useState(null);
 
-  // ✅ warnings modal (instead of alert)
+  // ✅ warnings modal
   const [warnOpen, setWarnOpen] = useState(false);
   const [warnTitle, setWarnTitle] = useState("Warning");
   const [warnMsg, setWarnMsg] = useState("");
@@ -141,6 +141,12 @@ export default function Calander({ role }) {
     }
     if (data.error === "LOCKED_QUALIFIED") {
       return showWarn("Locked", "Ye card QUALIFIED (Done) ho chuka hai. Ab move/out/shift allowed nahi hai.");
+    }
+    if (data.error === "OCCUPY_MUST_BE_AFTER_MEETING") {
+      return showWarn(
+        "Invalid Occupy Date",
+        data.message || "Occupy (Diksha) date must be AFTER the meeting date. Meeting date se aage ka date select karo."
+      );
     }
 
     return showWarn("Error", data.error || fallback);
@@ -356,7 +362,6 @@ export default function Calander({ role }) {
     await loadSummary();
   }
 
-  // ✅ NEW: Reject to Trash
   async function rejectToTrash(assignment) {
     const cId = safeId(container?._id);
     const aId = safeId(assignment?._id);
@@ -389,7 +394,6 @@ export default function Calander({ role }) {
     }
   }
 
-  // ✅ EXISTING: Reject to Pending (unchanged logic)
   async function rejectToPending(assignment) {
     const cId = safeId(container?._id);
     const aId = safeId(assignment?._id);
@@ -546,6 +550,9 @@ export default function Calander({ role }) {
 
   const mobileContainerReady = !!container && (selectedDate ? container?.date === selectedDate : true);
 
+  // ✅ NEW: Mobile container tab state
+  const [mobileContainerTab, setMobileContainerTab] = useState("LIST"); // LIST | STATS
+
   return (
     <div>
       <button
@@ -625,11 +632,16 @@ export default function Calander({ role }) {
           </div>
         </div>
 
-        {/* Mobile Day Strip */}
+        {/* ✅ ENHANCED Mobile Day Strip */}
         <div className="block md:hidden">
           <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-            <div className="text-xs text-white/60 mb-2">Select Date</div>
-            <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs text-white/60">Select Date</div>
+              <div className="text-[10px] text-white/40">
+                {mode === "MEETING" ? "📋 Meeting" : "🔱 Diksha"} • {anchor.toLocaleString("default", { month: "short" })} {year}
+              </div>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 snap-x snap-mandatory">
               {monthDays.map((d) => {
                 const dateStr = ymdLocal(d);
                 const isSelected = selectedDate === dateStr;
@@ -637,145 +649,366 @@ export default function Calander({ role }) {
                 const weekday = d.toLocaleDateString("default", { weekday: "short" });
                 const isSun = d.getDay() === 0;
                 const s = summary?.[dateStr];
+                const hasCards = s && (s.male + s.female) > 0;
 
                 return (
                   <button
                     key={dateStr}
                     onClick={() => openContainerForDate(dateStr, { openLayer: false })}
                     className={[
-                      "shrink-0 min-w-[72px] rounded-2xl border px-3 py-2 text-left",
+                      "shrink-0 min-w-[76px] rounded-2xl border px-3 py-2.5 text-left snap-start transition-all",
                       "bg-black/30 border-white/10",
-                      isSelected ? "ring-2 ring-blue-500/60" : "",
-                      isToday ? "border-emerald-400/30 shadow-[0_0_30px_rgba(16,185,129,0.12)]" : "",
+                      isSelected ? "ring-2 ring-blue-500/60 bg-blue-500/10 border-blue-400/30" : "",
+                      isToday && !isSelected ? "border-emerald-400/30 shadow-[0_0_30px_rgba(16,185,129,0.12)]" : "",
                     ].join(" ")}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className={["text-[11px] font-semibold", isSun ? "text-red-200" : "text-white/80"].join(" ")}>
+                    <div className="flex items-center justify-between gap-1">
+                      <div className={["text-[11px] font-semibold", isSun ? "text-red-300" : "text-white/80"].join(" ")}>
                         {weekday}
                       </div>
-                      {isToday ? <span className="text-[10px] text-emerald-200">●</span> : null}
+                      {isToday ? <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> : null}
                     </div>
-                    <div className="text-base font-bold leading-5">{d.getDate()}</div>
-                    <div className="mt-1 text-[10px] text-white/60">{s ? `M${s.male} F${s.female}` : "—"}</div>
+                    <div className="text-lg font-bold leading-6 mt-0.5">{d.getDate()}</div>
+
+                    {/* ✅ Enhanced: show card count + gender split */}
+                    {hasCards ? (
+                      <div className="mt-1.5 space-y-0.5">
+                        <div className="text-[10px] text-white/70 font-medium">{s.male + s.female} cards</div>
+                        <div className="flex gap-1">
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-500/20 border border-blue-400/20 text-blue-200">
+                            M{s.male}
+                          </span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-pink-500/20 border border-pink-400/20 text-pink-200">
+                            F{s.female}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-1.5 text-[10px] text-white/30">—</div>
+                    )}
                   </button>
                 );
               })}
             </div>
           </div>
 
+          {/* ✅ ENHANCED Mobile Container Section */}
           <div className="mt-3">
             {housefull && (
               <div className="mb-3 rounded-2xl border border-red-400/20 bg-red-500/10 p-3">
-                <div className="text-sm font-semibold text-red-200">Housefull</div>
-                <div className="text-xs text-red-200/80 mt-1">Limit reached.</div>
+                <div className="text-sm font-semibold text-red-200">🚫 Housefull</div>
+                <div className="text-xs text-red-200/80 mt-1">Limit reached. Admin can increase limit.</div>
               </div>
             )}
 
             <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+              {/* ✅ ENHANCED Container Header */}
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="text-xs text-white/60">CONTAINER</div>
-                  <div className="mt-1 font-bold truncate">
-                    {mobileContainerReady ? `${container.date} / ${container.mode}` : selectedDate ? `${selectedDate} / ${mode}` : `${mode}`}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <div className="text-xs text-white/60">CONTAINER</div>
+                    {mobileContainerReady && container?.mode === "MEETING" ? (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/20 text-amber-200">
+                        📋 Meeting
+                      </span>
+                    ) : mobileContainerReady && container?.mode === "DIKSHA" ? (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-400/20 text-purple-200">
+                        🔱 Diksha
+                      </span>
+                    ) : null}
                   </div>
-                  <div className="text-xs text-white/60 mt-1">
-                    {mobileContainerReady ? (
-                      container?.mode === "DIKSHA"
-                        ? `IN ${counts.total} • Reserved ${reservedCounts.total} • Limit ${container.limit ?? 20}`
-                        : `Total ${counts.total}`
-                    ) : containerLoading ? (
-                      "Loading..."
-                    ) : (
-                      "Select a date."
-                    )}
+                  <div className="mt-1 font-bold truncate text-lg">
+                    {mobileContainerReady ? container.date : selectedDate ? selectedDate : mode}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                {/* ✅ ENHANCED Action buttons - better touch targets */}
+                <div className="flex items-center gap-1.5 shrink-0">
                   {role === "ADMIN" && (
                     <button
                       onClick={increaseLimit}
                       disabled={!mobileContainerReady || pushing}
-                      className="w-11 h-11 rounded-2xl bg-white text-black font-bold disabled:opacity-60 flex items-center justify-center"
+                      className="w-10 h-10 rounded-xl bg-white text-black font-bold text-sm disabled:opacity-40 flex items-center justify-center active:scale-95 transition"
                     >
-                      {pushing ? <BufferSpinner size={18} /> : "+"}
+                      {pushing ? <BufferSpinner size={16} /> : "+"}
                     </button>
                   )}
-
                   <button
                     onClick={openPrintAllForContainer}
                     disabled={!mobileContainerReady || pushing}
-                    className="w-11 h-11 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 disabled:opacity-60 flex items-center justify-center"
+                    className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 disabled:opacity-40 flex items-center justify-center active:scale-95 transition"
                     title="Print all"
                   >
-                    {pushing ? <BufferSpinner size={18} /> : "🖨"}
+                    🖨
                   </button>
-
                   <button
                     onClick={openAddCustomerLayer}
                     disabled={!mobileContainerReady || pushing}
-                    className="w-11 h-11 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 disabled:opacity-60 flex items-center justify-center"
+                    className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 disabled:opacity-40 flex items-center justify-center active:scale-95 transition"
                     title="Add"
                   >
-                    {pushing ? <BufferSpinner size={18} /> : "＋"}
+                    ＋
                   </button>
-
                   <button
                     onClick={openPrintListForContainer}
                     disabled={!mobileContainerReady || pushing}
-                    className="w-11 h-11 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 disabled:opacity-60 flex items-center justify-center"
+                    className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 disabled:opacity-40 flex items-center justify-center active:scale-95 transition"
                     title="Print list"
                   >
-                    {pushing ? <BufferSpinner size={18} /> : "📄"}
+                    📄
                   </button>
                 </div>
               </div>
 
-              <div className="mt-3 flex items-center justify-between">
-                <div className="text-xs text-white/60">Customers{containerLoading ? " (loading...)" : ""}</div>
-                <button
-                  onClick={() => setShowList((v) => !v)}
-                  disabled={!mobileContainerReady || pushing}
-                  className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-xs disabled:opacity-60"
-                >
-                  {showList ? "Hide List" : "Show List"}
-                </button>
-              </div>
+              {/* ✅ NEW: Gender Stats Bar (Mobile) */}
+              {mobileContainerReady ? (
+                <div className="mt-3 rounded-2xl border border-white/10 bg-black/20 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[11px] px-2.5 py-1 rounded-full bg-blue-500/15 border border-blue-400/20 text-blue-200 font-medium">
+                        👨 Male {counts.male}
+                      </span>
+                      <span className="text-[11px] px-2.5 py-1 rounded-full bg-pink-500/15 border border-pink-400/20 text-pink-200 font-medium">
+                        👩 Female {counts.female}
+                      </span>
+                      {counts.other > 0 ? (
+                        <span className="text-[11px] px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-400/20 text-emerald-200 font-medium">
+                          Other {counts.other}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="text-sm font-bold text-white">{counts.total}</div>
+                  </div>
 
-              {mobileContainerReady && showList && assignments.length > 0 ? (
+                  {/* ✅ Diksha: show reserved + limit */}
+                  {container?.mode === "DIKSHA" ? (
+                    <div className="mt-2 flex items-center gap-2 flex-wrap">
+                      <span className="text-[11px] px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-400/20 text-emerald-200">
+                        Reserved {reservedCounts.total}
+                      </span>
+                      <span className="text-[11px] px-2.5 py-1 rounded-full bg-white/10 border border-white/10 text-white/70">
+                        Limit {container.limit ?? 20}
+                      </span>
+                      <span className={`text-[11px] px-2.5 py-1 rounded-full border font-medium ${
+                        (counts.total + reservedCounts.total) >= (container.limit ?? 20)
+                          ? "bg-red-500/15 border-red-400/20 text-red-200"
+                          : "bg-emerald-500/15 border-emerald-400/20 text-emerald-200"
+                      }`}>
+                        Remaining {Math.max(0, (container.limit ?? 20) - counts.total - reservedCounts.total)}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="mt-2 text-[11px] text-white/50">
+                      Total cards: {counts.total}
+                    </div>
+                  )}
+                </div>
+              ) : null}
+
+              {/* ✅ NEW: Mobile Container Tabs (List / Stats) */}
+              {mobileContainerReady ? (
+                <div className="mt-3 flex gap-1.5">
+                  <button
+                    onClick={() => setMobileContainerTab("LIST")}
+                    className={`flex-1 px-3 py-2 rounded-xl text-xs font-semibold transition ${
+                      mobileContainerTab === "LIST"
+                        ? "bg-white text-black"
+                        : "bg-white/10 text-white/70 hover:bg-white/15"
+                    }`}
+                  >
+                    📋 List ({counts.total})
+                  </button>
+                  <button
+                    onClick={() => setMobileContainerTab("STATS")}
+                    className={`flex-1 px-3 py-2 rounded-xl text-xs font-semibold transition ${
+                      mobileContainerTab === "STATS"
+                        ? "bg-white text-black"
+                        : "bg-white/10 text-white/70 hover:bg-white/15"
+                    }`}
+                  >
+                    📊 Stats
+                  </button>
+                  <button
+                    onClick={() => setShowList((v) => !v)}
+                    disabled={!mobileContainerReady || pushing}
+                    className="px-3 py-2 rounded-xl bg-white/10 text-white/70 text-xs disabled:opacity-40"
+                  >
+                    {showList ? "👁" : "👁‍🗨"}
+                  </button>
+                </div>
+              ) : null}
+
+              {/* ✅ NEW: Stats Tab Content (Mobile) */}
+              {mobileContainerReady && mobileContainerTab === "STATS" ? (
+                <div className="mt-3 space-y-3">
+                  {/* Gender Breakdown */}
+                  <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                    <div className="text-xs text-white/60 font-medium mb-2">Gender Breakdown</div>
+                    <div className="space-y-2">
+                      {/* Male bar */}
+                      <div>
+                        <div className="flex justify-between text-[11px] mb-1">
+                          <span className="text-blue-200">👨 Male</span>
+                          <span className="text-white font-semibold">{counts.male}</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-blue-500/60 transition-all"
+                            style={{ width: counts.total ? `${(counts.male / counts.total) * 100}%` : "0%" }}
+                          />
+                        </div>
+                      </div>
+                      {/* Female bar */}
+                      <div>
+                        <div className="flex justify-between text-[11px] mb-1">
+                          <span className="text-pink-200">👩 Female</span>
+                          <span className="text-white font-semibold">{counts.female}</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-pink-500/60 transition-all"
+                            style={{ width: counts.total ? `${(counts.female / counts.total) * 100}%` : "0%" }}
+                          />
+                        </div>
+                      </div>
+                      {counts.other > 0 ? (
+                        <div>
+                          <div className="flex justify-between text-[11px] mb-1">
+                            <span className="text-emerald-200">Other</span>
+                            <span className="text-white font-semibold">{counts.other}</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-emerald-500/60 transition-all"
+                              style={{ width: counts.total ? `${(counts.other / counts.total) * 100}%` : "0%" }}
+                            />
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  {/* Reserved (Diksha only) */}
+                  {container?.mode === "DIKSHA" ? (
+                    <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-3">
+                      <div className="text-xs text-emerald-200/70 font-medium mb-2">Reserved / Occupied (Meeting holds)</div>
+                      <div className="flex items-center gap-3">
+                        <div className="text-2xl font-bold text-emerald-200">{reservedCounts.total}</div>
+                        <div className="flex gap-1.5 flex-wrap">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-400/20 text-blue-200">
+                            M {reservedCounts.male}
+                          </span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-pink-500/15 border border-pink-400/20 text-pink-200">
+                            F {reservedCounts.female}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {/* Capacity */}
+                  {container?.mode === "DIKSHA" ? (
+                    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                      <div className="text-xs text-white/60 font-medium mb-2">Capacity</div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-xs text-white/50">Used</div>
+                          <div className="text-lg font-bold">{counts.total + reservedCounts.total} / {container.limit ?? 20}</div>
+                        </div>
+                        <div className={`text-sm font-bold px-3 py-1.5 rounded-full border ${
+                          (counts.total + reservedCounts.total) >= (container.limit ?? 20)
+                            ? "bg-red-500/15 border-red-400/20 text-red-200"
+                            : "bg-emerald-500/15 border-emerald-400/20 text-emerald-200"
+                        }`}>
+                          {Math.max(0, (container.limit ?? 20) - counts.total - reservedCounts.total)} left
+                        </div>
+                      </div>
+                      {/* Visual bar */}
+                      <div className="mt-2 h-3 rounded-full bg-white/10 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            (counts.total + reservedCounts.total) >= (container.limit ?? 20)
+                              ? "bg-red-500/60"
+                              : "bg-emerald-500/60"
+                          }`}
+                          style={{ width: `${Math.min(100, ((counts.total + reservedCounts.total) / (container.limit ?? 20)) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {/* ✅ List Tab Content (Mobile) */}
+              {mobileContainerReady && mobileContainerTab === "LIST" && showList && assignments.length > 0 ? (
                 <div className="mt-3 space-y-2">
                   {assignments.map((a, idx) => {
                     const seq = idx + 1;
                     const cust = a.customer;
                     const isMeeting = container?.mode === "MEETING";
                     const qualified = a?.cardStatus === "QUALIFIED";
+                    const isMale = cust?.gender === "MALE";
+                    const isFemale = cust?.gender === "FEMALE";
 
                     return (
                       <div
                         key={safeId(a._id)}
                         onClick={() => openProfile(cust, seq)}
-                        className="rounded-2xl border border-white/10 bg-black/30 p-4 flex items-start justify-between gap-3 cursor-pointer hover:bg-black/35"
+                        className={[
+                          "rounded-2xl border p-3.5 flex items-start justify-between gap-3 cursor-pointer active:scale-[0.99] transition-all",
+                          isMale
+                            ? "border-blue-400/15 bg-blue-500/5 hover:bg-blue-500/10"
+                            : isFemale
+                            ? "border-pink-400/15 bg-pink-500/5 hover:bg-pink-500/10"
+                            : "border-white/10 bg-black/30 hover:bg-black/35",
+                        ].join(" ")}
                       >
-                        <div className="min-w-0">
-                          <div className="text-xs text-white/60">#{seq} • {a.kind || "SINGLE"}</div>
-                          <div className="font-semibold truncate mt-0.5">{cust?.name}</div>
-                          <div className="text-xs text-white/60 truncate">{cust?.address || "-"}</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                              isMale
+                                ? "bg-blue-500/20 text-blue-200"
+                                : isFemale
+                                ? "bg-pink-500/20 text-pink-200"
+                                : "bg-white/10 text-white/70"
+                            }`}>
+                              {seq}
+                            </span>
+                            <div className="min-w-0">
+                              <div className="font-semibold truncate text-sm">{cust?.name}</div>
+                              <div className="text-[11px] text-white/50 truncate">{cust?.address || "-"}</div>
+                            </div>
+                          </div>
 
-                          <div className="mt-2 flex flex-wrap gap-1.5">
+                          <div className="mt-2 flex flex-wrap gap-1 ml-8">
+                            <span className={`text-[9px] px-1.5 py-0.5 rounded-full border ${
+                              isMale
+                                ? "bg-blue-500/15 border-blue-400/20 text-blue-200"
+                                : isFemale
+                                ? "bg-pink-500/15 border-pink-400/20 text-pink-200"
+                                : "bg-white/10 border-white/10 text-white/60"
+                            }`}>
+                              {cust?.gender || "?"}
+                            </span>
+
+                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/10 border border-white/10 text-white/50">
+                              {a.kind || "SINGLE"}
+                            </span>
+
                             {isMeeting && a?.occupiedDate ? (
-                              <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/15 border border-emerald-400/20 text-emerald-200">
-                                Occupied: {a.occupiedDate}
+                              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/20 text-emerald-200">
+                                🔱 {a.occupiedDate}
                               </span>
                             ) : null}
 
                             {cust?.dikshaEligible === true || cust?.status === "ELIGIBLE" ? (
-                              <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] bg-blue-500/15 border border-blue-400/20 text-blue-200">
-                                ELIGIBLE
+                              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-500/15 border border-blue-400/20 text-blue-200">
+                                ✅ ELIGIBLE
                               </span>
                             ) : null}
 
                             {qualified ? (
-                              <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] bg-yellow-500/15 border border-yellow-400/20 text-yellow-200">
+                              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-yellow-500/15 border border-yellow-400/20 text-yellow-200">
                                 👑 QUALIFIED
                               </span>
                             ) : null}
@@ -783,16 +1016,16 @@ export default function Calander({ role }) {
                         </div>
 
                         {isMeeting ? (
-                          <div className="flex flex-col gap-2 shrink-0">
+                          <div className="flex flex-col gap-1.5 shrink-0">
                             <button
                               disabled={pushing}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 confirmMeetingCard(a);
                               }}
-                              className="px-4 py-2 rounded-2xl bg-white text-black text-xs font-semibold disabled:opacity-60"
+                              className="px-3 py-1.5 rounded-xl bg-white text-black text-[11px] font-semibold disabled:opacity-60 active:scale-95 transition"
                             >
-                              {pushing ? "..." : "Confirm"}
+                              ✓ Confirm
                             </button>
                             <button
                               disabled={pushing}
@@ -802,20 +1035,20 @@ export default function Calander({ role }) {
                                 setRejectTargetSeq(seq);
                                 setRejectOpen(true);
                               }}
-                              className="px-4 py-2 rounded-2xl bg-white/10 hover:bg-white/15 text-xs border border-white/10 disabled:opacity-60"
+                              className="px-3 py-1.5 rounded-xl bg-white/10 text-[11px] border border-white/10 disabled:opacity-60 active:scale-95 transition"
                             >
-                              Reject
+                              ✗ Reject
                             </button>
                           </div>
                         ) : (
-                          <div className="flex flex-col gap-2 shrink-0">
+                          <div className="flex flex-col gap-1.5 shrink-0">
                             <button
                               disabled={pushing || qualified}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 outAssignment(a._id);
                               }}
-                              className="px-4 py-2 rounded-2xl bg-white/10 hover:bg-white/15 text-xs border border-white/10 disabled:opacity-60"
+                              className="px-3 py-1.5 rounded-xl bg-white/10 text-[11px] border border-white/10 disabled:opacity-60 active:scale-95 transition"
                             >
                               Out
                             </button>
@@ -827,9 +1060,9 @@ export default function Calander({ role }) {
                                   e.stopPropagation();
                                   doneAssignment(a);
                                 }}
-                                className="px-4 py-2 rounded-2xl bg-white text-black text-xs font-semibold disabled:opacity-60"
+                                className="px-3 py-1.5 rounded-xl bg-white text-black text-[11px] font-semibold disabled:opacity-60 active:scale-95 transition"
                               >
-                                Done
+                                ✓ Done
                               </button>
                             ) : null}
                           </div>
@@ -838,11 +1071,21 @@ export default function Calander({ role }) {
                     );
                   })}
                 </div>
-              ) : (
-                <div className="mt-3 text-white/60 text-sm">
-                  {!mobileContainerReady ? "Pick a date." : !showList ? "List hidden." : "No customers."}
+              ) : mobileContainerReady && mobileContainerTab === "LIST" ? (
+                <div className="mt-3 text-white/60 text-sm text-center py-6">
+                  {!showList ? "List hidden. Tap 👁 to show." : "No customers in this container."}
                 </div>
-              )}
+              ) : !mobileContainerReady ? (
+                <div className="mt-3 text-white/50 text-sm text-center py-6">
+                  {containerLoading ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <BufferSpinner size={16} /> Loading...
+                    </div>
+                  ) : (
+                    "Pick a date from above."
+                  )}
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -886,8 +1129,8 @@ export default function Calander({ role }) {
 
                   {s ? (
                     <div className="mt-1.5 sm:mt-2 text-[10px] sm:text-[11px] text-white/80 flex gap-1.5 sm:gap-2 flex-wrap">
-                      <span className="px-2 py-0.5 rounded-full bg-white/10 border border-white/10">M {s.male}</span>
-                      <span className="px-2 py-0.5 rounded-full bg-white/10 border border-white/10">F {s.female}</span>
+                      <span className="px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-400/15 text-blue-200">M {s.male}</span>
+                      <span className="px-2 py-0.5 rounded-full bg-pink-500/15 border border-pink-400/15 text-pink-200">F {s.female}</span>
                     </div>
                   ) : (
                     <div className="mt-1.5 sm:mt-2 text-[10px] sm:text-[11px] text-white/35">—</div>
@@ -929,28 +1172,48 @@ export default function Calander({ role }) {
           </div>
         ) : null}
 
-        <div className="flex flex-wrap items-center justify-end gap-2 mb-3">
-          {role === "ADMIN" ? (
-            <button onClick={increaseLimit} disabled={pushing} className="w-11 h-11 shrink-0 rounded-2xl bg-white text-black font-bold disabled:opacity-60" title="Increase limit">
-              {pushing ? <BufferSpinner size={18} /> : "+"}
+        {/* ✅ ENHANCED: Desktop gender stats */}
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] px-2.5 py-1 rounded-full bg-blue-500/15 border border-blue-400/20 text-blue-200 font-medium">
+              👨 Male {counts.male}
+            </span>
+            <span className="text-[11px] px-2.5 py-1 rounded-full bg-pink-500/15 border border-pink-400/20 text-pink-200 font-medium">
+              👩 Female {counts.female}
+            </span>
+            {counts.other > 0 ? (
+              <span className="text-[11px] px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-400/20 text-emerald-200 font-medium">
+                Other {counts.other}
+              </span>
+            ) : null}
+            <span className="text-[11px] px-2.5 py-1 rounded-full bg-white/10 border border-white/10 text-white/70 font-medium">
+              Total {counts.total}
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {role === "ADMIN" ? (
+              <button onClick={increaseLimit} disabled={pushing} className="w-11 h-11 shrink-0 rounded-2xl bg-white text-black font-bold disabled:opacity-60" title="Increase limit">
+                {pushing ? <BufferSpinner size={18} /> : "+"}
+              </button>
+            ) : null}
+
+            <button onClick={openPrintAllForContainer} disabled={pushing} className="w-11 h-11 shrink-0 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 disabled:opacity-60" title="Print all">
+              {pushing ? <BufferSpinner size={18} /> : "🖨"}
             </button>
-          ) : null}
 
-          <button onClick={openPrintAllForContainer} disabled={pushing} className="w-11 h-11 shrink-0 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 disabled:opacity-60" title="Print all">
-            {pushing ? <BufferSpinner size={18} /> : "🖨"}
-          </button>
+            <button onClick={() => setShowList((v) => !v)} disabled={pushing} className="w-11 h-11 shrink-0 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 disabled:opacity-60" title="Toggle list">
+              ☰
+            </button>
 
-          <button onClick={() => setShowList((v) => !v)} disabled={pushing} className="w-11 h-11 shrink-0 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 disabled:opacity-60" title="Toggle list">
-            ☰
-          </button>
+            <button onClick={openAddCustomerLayer} disabled={pushing} className="w-11 h-11 shrink-0 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 disabled:opacity-60" title="Add customer">
+              {pushing ? <BufferSpinner size={18} /> : "＋"}
+            </button>
 
-          <button onClick={openAddCustomerLayer} disabled={pushing} className="w-11 h-11 shrink-0 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 disabled:opacity-60" title="Add customer">
-            {pushing ? <BufferSpinner size={18} /> : "＋"}
-          </button>
-
-          <button onClick={openPrintListForContainer} disabled={pushing} className="w-11 h-11 shrink-0 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 disabled:opacity-60" title="Print list">
-            📄
-          </button>
+            <button onClick={openPrintListForContainer} disabled={pushing} className="w-11 h-11 shrink-0 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 disabled:opacity-60" title="Print list">
+              📄
+            </button>
+          </div>
         </div>
 
         {!showList ? (
@@ -1042,7 +1305,7 @@ export default function Calander({ role }) {
         )}
       </LayerModal>
 
-      {/* ✅ NEW: Beautiful Reject Options Dialog */}
+      {/* Reject Options Dialog */}
       <LayerModal
         open={rejectOpen}
         layerName="Reject"
@@ -1057,7 +1320,6 @@ export default function Calander({ role }) {
         disableBackdropClose
       >
         <div className="rounded-2xl border border-white/10 bg-black/30 p-5">
-          {/* Customer Info Header */}
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4 mb-5">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-white/10 border border-white/10 flex items-center justify-center text-lg shrink-0">
@@ -1075,9 +1337,7 @@ export default function Calander({ role }) {
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="space-y-3">
-            {/* Trash Option */}
             <button
               disabled={pushing}
               onClick={() => rejectTarget && rejectToTrash(rejectTarget)}
@@ -1101,7 +1361,6 @@ export default function Calander({ role }) {
               )}
             </button>
 
-            {/* Pending Option */}
             <button
               disabled={pushing}
               onClick={() => rejectTarget && rejectToPending(rejectTarget)}
@@ -1125,7 +1384,6 @@ export default function Calander({ role }) {
               )}
             </button>
 
-            {/* Approve For Option */}
             <button
               disabled={pushing}
               onClick={() => {
@@ -1156,7 +1414,6 @@ export default function Calander({ role }) {
             </button>
           </div>
 
-          {/* Cancel Button */}
           <div className="mt-4 pt-3 border-t border-white/5">
             <button
               onClick={() => {
@@ -1304,9 +1561,11 @@ export default function Calander({ role }) {
         }}
       />
 
+      {/* ✅ Pass meetingDate to DikshaOccupyPickerModal */}
       <DikshaOccupyPickerModal
         open={occupyOpen}
         groupSize={occupyCtx?.groupSize || 1}
+        meetingDate={container?.mode === "MEETING" ? container?.date : null}
         onClose={() => {
           setOccupyOpen(false);
           setOccupyCtx(null);

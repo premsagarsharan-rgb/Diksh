@@ -47,7 +47,7 @@ export async function POST(req, { params }) {
   const container = await db.collection("calendarContainers").findOne({ _id: ctnId });
   if (!container) return NextResponse.json({ error: "Container not found" }, { status: 404 });
 
-  // ✅ NEW RULE: MEETING always requires occupyDate (same flow as Calendar meeting push)
+  // MEETING always requires occupyDate
   if (container.mode === "MEETING" && occupyDate == null) {
     return NextResponse.json({ error: "OCCUPY_REQUIRED" }, { status: 400 });
   }
@@ -58,7 +58,7 @@ export async function POST(req, { params }) {
     status: "IN_CONTAINER",
   });
 
-  // ✅ DIKSHA mode: reserved also consumes limit
+  // DIKSHA mode: reserved also consumes limit
   if (container.mode === "DIKSHA") {
     const reservedCount = await countReservedForContainer(db, ctnId);
     const used = inCount + reservedCount;
@@ -66,13 +66,12 @@ export async function POST(req, { params }) {
       return NextResponse.json({ error: "HOUSEFULL" }, { status: 409 });
     }
   } else {
-    // meeting or others: normal limit
     if (inCount >= (container.limit || 20)) {
       return NextResponse.json({ error: "HOUSEFULL" }, { status: 409 });
     }
   }
 
-  // ✅ MEETING occupy validation + DIKSHA capacity check
+  // MEETING occupy validation + DIKSHA capacity check
   let occupiedContainerId = null;
   let occupiedMode = null;
   let occupiedDate = null;
@@ -85,8 +84,16 @@ export async function POST(req, { params }) {
     if (!isDateKey(occupyDate)) return NextResponse.json({ error: "Invalid occupyDate (YYYY-MM-DD)" }, { status: 400 });
 
     const todayKey = ymdLocal(new Date());
-    if (occupyDate <= todayKey) {
-      return NextResponse.json({ error: "occupyDate must be future date" }, { status: 400 });
+    if (occupyDate < todayKey) {
+      return NextResponse.json({ error: "occupyDate must be today or future date" }, { status: 400 });
+    }
+
+    // ✅ UPDATED RULE: occupyDate must be >= meeting container date (SAME allowed)
+    if (container.date && occupyDate < container.date) {
+      return NextResponse.json(
+        { error: "OCCUPY_MUST_BE_AFTER_MEETING", message: `Occupy date (${occupyDate}) must be same or after meeting date (${container.date})` },
+        { status: 400 }
+      );
     }
 
     // ensure DIKSHA container exists
@@ -109,7 +116,7 @@ export async function POST(req, { params }) {
     const dikshaContainer = await db.collection("calendarContainers").findOne(key);
     if (!dikshaContainer?._id) return NextResponse.json({ error: "Diksha container create failed" }, { status: 500 });
 
-    // ✅ occupied consumes DIKSHA limit too
+    // occupied consumes DIKSHA limit too
     const dikshaIn = await db.collection("calendarAssignments").countDocuments({
       containerId: dikshaContainer._id,
       status: "IN_CONTAINER",
@@ -177,7 +184,7 @@ export async function POST(req, { params }) {
     return NextResponse.json({ error: "Customer not ACTIVE (already assigned)" }, { status: 409 });
   }
 
-  // ✅ NEW RULE: direct DIKSHA push allowed only if eligible
+  // direct DIKSHA push allowed only if eligible
   if (container.mode === "DIKSHA") {
     if (sitting?.dikshaEligible !== true) {
       return NextResponse.json({ error: "NOT_ELIGIBLE_FOR_DIKSHA" }, { status: 409 });

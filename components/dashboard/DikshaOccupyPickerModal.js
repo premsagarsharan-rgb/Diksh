@@ -47,9 +47,26 @@ export default function DikshaOccupyPickerModal({
   onPick,
   title = "Occupy Diksha Date",
   groupSize = 1,
+  // meetingDate — if provided, occupy must be >= this date (SAME or AFTER)
+  meetingDate = null,
 }) {
   const today = useMemo(() => new Date(), []);
-  const minDate = useMemo(() => new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1), [today]); // tomorrow
+
+  // ✅ UPDATED: minDate = max(tomorrow, meetingDate) — SAME date allowed now
+  const minDate = useMemo(() => {
+    const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+
+    if (meetingDate) {
+      const [my, mm, md] = String(meetingDate).split("-").map(Number);
+      if (my && mm && md) {
+        const meetingDay = new Date(my, mm - 1, md);
+        // ✅ SAME date allowed: meetingDay itself (not +1)
+        return meetingDay > tomorrow ? meetingDay : tomorrow;
+      }
+    }
+
+    return tomorrow;
+  }, [today, meetingDate]);
 
   const [monthCursor, setMonthCursor] = useState(() => startOfMonth(minDate));
   const [selected, setSelected] = useState("");
@@ -125,13 +142,19 @@ export default function DikshaOccupyPickerModal({
   const remaining = limit - used;
   const canOccupy = !previewBusy && !previewData?.error && (used + groupSize <= limit);
 
+  const minDateKey = useMemo(() => toDateKey(minDate), [minDate]);
+
   return (
     <>
       <LayerModal
         open={open}
         layerName="Occupy"
         title={title}
-        sub="Date click → container preview"
+        sub={
+          meetingDate
+            ? `Meeting: ${meetingDate} • Occupy: ${meetingDate} se aage (same allowed)`
+            : "Date click → container preview"
+        }
         onClose={() => {
           setPreviewOpen(false);
           setPreviewData(null);
@@ -141,6 +164,17 @@ export default function DikshaOccupyPickerModal({
         maxWidth="max-w-3xl"
         disableBackdropClose
       >
+        {/* Info banner when meetingDate is provided */}
+        {meetingDate ? (
+          <div className="mb-3 rounded-2xl border border-amber-400/20 bg-amber-500/10 p-3">
+            <div className="text-sm font-semibold text-amber-200">📅 Meeting Date: {meetingDate}</div>
+            <div className="text-xs text-amber-200/70 mt-1">
+              Diksha occupy date: <b>{meetingDate}</b> se aage (same date bhi allowed).
+              Earliest: <b>{minDateKey}</b>
+            </div>
+          </div>
+        ) : null}
+
         <div className="flex items-center justify-between gap-2 mb-3">
           <button type="button" onClick={() => setMonthCursor((m) => addMonths(m, -1))} className="px-3 py-2 rounded-xl bg-white/10 border border-white/10 hover:bg-white/15">
             Prev
@@ -152,7 +186,7 @@ export default function DikshaOccupyPickerModal({
         </div>
 
         <div className="grid grid-cols-7 gap-1 sm:gap-2 text-[10px] sm:text-xs mb-2">
-          {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((d) => (
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
             <div key={d} className="text-center text-white/60">{d}</div>
           ))}
         </div>
@@ -162,11 +196,15 @@ export default function DikshaOccupyPickerModal({
             const key = toDateKey(d);
             const inMonth = d.getMonth() === monthCursor.getMonth();
 
+            // ✅ UPDATED: disabled if BEFORE minDate (same date = allowed)
             const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
             const minStart = new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate());
             const disabled = dayStart < minStart;
 
             const isSelected = selected === key;
+
+            // Meeting date highlight
+            const isMeetingDay = meetingDate && key === meetingDate;
 
             return (
               <button
@@ -182,8 +220,15 @@ export default function DikshaOccupyPickerModal({
                   inMonth ? "" : "opacity-40",
                   disabled ? "opacity-30 cursor-not-allowed" : "hover:bg-white/10",
                   isSelected ? "bg-white text-black font-semibold" : "bg-transparent text-white",
-                  "border-white/10",
+                  isMeetingDay && !isSelected ? "border-emerald-400/50 bg-emerald-500/10" : "border-white/10",
                 ].join(" ")}
+                title={
+                  isMeetingDay
+                    ? `Meeting date (${meetingDate}) — ✅ selectable for occupy`
+                    : disabled
+                    ? `Before minimum date (${minDateKey})`
+                    : key
+                }
               >
                 {d.getDate()}
               </button>
@@ -193,6 +238,9 @@ export default function DikshaOccupyPickerModal({
 
         <div className="mt-3 text-xs text-white/50">
           Selected: <b>{selected || "—"}</b> • Group size: <b>{groupSize}</b>
+          {meetingDate ? (
+            <span> • Min occupy: <b>{minDateKey}</b></span>
+          ) : null}
         </div>
       </LayerModal>
 
