@@ -1,0 +1,200 @@
+import { NextResponse } from "next/server";
+import { ObjectId } from "mongodb";
+import { getDb } from "@/lib/mongodb";
+import { getSession } from "@/lib/session";
+import { addCommit } from "@/lib/commits";
+import { buildWhatsAppTo, sendWhatsAppText } from "@/lib/whatsappTwilio";
+
+export const runtime = "nodejs";
+
+function normalizeWhatsAppTo(raw) {
+  const s = String(raw || "").trim();
+  if (!s) return null;
+
+  if (s.startsWith("whatsapp:")) {
+    const tail = s.slice("whatsapp:".length).trim();
+    if (!tail.startsWith("+")) return null;
+    return `whatsapp:${tail.replace(/\s+/g, "")}`;
+  }
+
+  if (s.startsWith("+")) return `whatsapp:${s.replace(/\s+/g, "")}`;
+
+  const digits = s.replace(/[^\d]/g, "");
+  if (!digits) return null;
+  return `whatsapp:+${digits}`;
+}
+
+export async function POST(req, { params }) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { containerId, assignmentId } = await params;
+  const body = await req.json().catch(() => ({}));
+  const { commitMessage } = body || {};
+  if (!commitMessage) return NextResponse.json({ error: "Commit required" }, { status: 400 });
+
+  const db = await getDb();
+  const ctnId = new ObjectId(containerId);
+  const asgId = new ObjectId(assignmentId);
+  const now = new Date();
+  const actorLabel = `${session.role}:${session.username}`;
+
+  const container = await db.collection("calendarContainers").findOne({ _id: ctnId });
+  if (!container) return NextResponse.json({ error: "Container not found" }, { status: 404 });
+  if (container.mode !== "MEETING") return NextResponse.json({ error: "Confirm only valid for MEETING" }, { status: 400 });
+
+  const base = await db.collection("calendarAssignments").findOne({
+    _id: asgId,
+    containerId: ctnId,
+    status: "IN_CONTAINER",
+  });
+  if (!base) return NextResponse.json({ error: "Assignment not found" }, { status: 404 });
+
+  if (!base.occupiedContainerId || !base.occupiedDate || base.meetingDecision !== "PENDING") {
+    return NextResponse.json({ error: "This card is not occupied / not pending" }, { status: 409 });
+  }
+
+  const isGroup = (base.kind === "COUPLE" || base.kind === "FAMILY") && base.pairId;
+  const group = isGroup
+    ? await db.collection("calendarAssignments").find({
+        containerId: ctnId,
+        status: "IN_CONTAINER",
+        pairId: base.pairId,
+      }).toArray()
+    : [base];
+
+  const targetId = new ObjectId(base.occupiedContainerId);
+  const ids = group.map((x) => x._id);
+  const custIds = group.map((x) => x.customerId);
+
+  // ✅ LOCK to prevent double confirm / duplicate WhatsApp
+  const lockRes = await db.collection("calendarAssignments").updateMany(
+    { _id: { $in: ids }, containerId: ctnId, status: "IN_CONTAINER", meetingDecision: "PENDING" },
+    { $set: { meetingDecision: "PROCESSING", processingAt: now, processingByUserId: session.userId, updatedAt: now } }
+  );
+  if (lockRes.modifiedCount !== ids.length) {
+    return NextResponse.json({ error: "Already processing / already confirmed" }, { status: 409 });
+  }
+
+  // load customers (need whatsappWelcomeTo)
+  const customers = await db.collection("sittingCustomers")
+    .find({ _id: { $in: custIds } })
+    .project({
+      name: 1,
+      rollNo: 1,
+      whatsappWelcomeTo: 1,
+      whatsappCountryCode: 1,
+      whatsappNumber: 1,
+      phoneCountryCode: 1,
+      phoneNumber: 1,
+    })
+    .toArray();
+
+  if (customers.length !== custIds.length) {
+    await db.collection("calendarAssignments").updateMany(
+      { _id: { $in: ids }, meetingDecision: "PROCESSING" },
+      { $set: { meetingDecision: "PENDING", updatedAt: new Date() }, $unset: { processingAt: "", processingByUserId: "" } }
+    );
+    return NextResponse.json({ error: "Customer record missing" }, { status: 404 });
+  }
+
+  const customerById = new Map(customers.map((c) => [String(c._id), c]));
+
+  // ✅ WhatsApp first (fail => confirm fail)
+  const sentMap = new Map();
+  try {
+    for (const cid of custIds) {
+      const c = customerById.get(String(cid));
+
+      const fromWelcome = normalizeWhatsAppTo(c?.whatsappWelcomeTo);
+      const fallback = buildWhatsAppTo(c);
+      const to = fromWelcome || fallback;
+      if (!to) throw new Error(`WHATSAPP_NUMBER_INVALID for ${c?.name || String(cid)}`);
+
+      const msg =
+        `Namaste ${c?.name || ""}\n` +
+        `Aapki Diksha Date CONFIRM ho gayi hai: ${base.occupiedDate}\n` +
+        `Roll No: ${c?.rollNo || "-"}\n`;
+
+      const r = await sendWhatsAppText({ to, body: msg });
+      sentMap.set(String(cid), { sid: r.sid, to, body: msg });
+    }
+  } catch (e) {
+    await db.collection("calendarAssignments").updateMany(
+      { _id: { $in: ids }, meetingDecision: "PROCESSING" },
+      {
+        $set: {
+          meetingDecision: "PENDING",
+          whatsappConfirmError: String(e?.message || e),
+          whatsappConfirmFailedAt: new Date(),
+          updatedAt: new Date(),
+        },
+        $unset: { processingAt: "", processingByUserId: "" },
+      }
+    );
+    return NextResponse.json(
+      { error: "WHATSAPP_SEND_FAILED", detail: String(e?.message || e) },
+      { status: 502 }
+    );
+  }
+
+  // ✅ Move assignments to DIKSHA + store WA logs
+  const bulk = group.map((a) => {
+    const meta = sentMap.get(String(a.customerId));
+    return {
+      updateOne: {
+        filter: { _id: a._id },
+        update: {
+          $set: {
+            containerId: targetId,
+            updatedAt: now,
+            meetingDecision: "CONFIRMED",
+            confirmedAt: now,
+            confirmedByUserId: session.userId,
+
+            whatsappConfirmSentAt: now,
+            whatsappConfirmSid: meta?.sid || null,
+            whatsappConfirmTo: meta?.to || null,
+            whatsappConfirmBody: meta?.body || null,
+          },
+          $unset: { processingAt: "", processingByUserId: "" },
+        },
+      },
+    };
+  });
+
+  await db.collection("calendarAssignments").bulkWrite(bulk, { ordered: true });
+
+  // ✅ update customers active container + mark eligible
+  await db.collection("sittingCustomers").updateMany(
+    { _id: { $in: custIds } },
+    {
+      $set: {
+        activeContainerId: targetId,
+        status: "IN_EVENT",
+        dikshaEligible: true,
+        dikshaEligibleAt: now,
+      },
+    }
+  );
+
+  for (const cid of custIds) {
+    await addCommit({
+      customerId: cid,
+      userId: session.userId,
+      actorLabel,
+      message: commitMessage,
+      action: "MEETING_CONFIRM_TO_DIKSHA",
+      meta: {
+        fromMeetingContainerId: String(ctnId),
+        toDikshaContainerId: String(targetId),
+        occupiedDate: base.occupiedDate,
+        kind: base.kind,
+        pairId: base.pairId ? String(base.pairId) : null,
+        whatsappConfirmSid: sentMap.get(String(cid))?.sid || null,
+      },
+    });
+  }
+
+  return NextResponse.json({ ok: true, moved: custIds.length });
+}

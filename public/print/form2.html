@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Devotee Information & Declaration Form</title>
+
+<style>
+@page{
+  size:A4;
+  font-weight: bold;
+  margin:0;
+}
+body{
+  margin:0;
+  background:#eee;
+  font-family:"Times New Roman", serif;
+}
+.page{
+  width:210mm;
+  height:297mm;
+  margin:0 auto;
+  background:#fff;
+  padding:20mm;
+  box-sizing:border-box;
+  overflow:hidden;
+}
+@media screen{
+  body{
+    display:flex;
+    justify-content:center;
+    padding:20px 0;
+  }
+}
+@media print{
+  body{ background:#fff; }
+  .page{
+    transform:none !important;
+    width:210mm;
+    height:297mm;
+    margin:0;
+    padding:20mm;
+    overflow:hidden;
+  }
+}
+.row{
+  display:flex;
+  justify-content:space-between;
+  font-size:14px;
+  font-weight:bold;
+}
+.center{ text-align:center; }
+h1{
+  font-size:16px;
+  margin:15px 0 3px;
+  text-decoration:underline;
+}
+h2{
+  font-size:14px;
+  margin:0 0 20px;
+}
+.field{
+  margin:12px 0;
+  font-size:14px;
+  display:flex;
+  align-items:flex-end;
+  gap:6px;
+}
+.line{
+  display:block;
+  border-bottom:1px solid #000;
+  flex:1;
+  min-width:0;
+  padding:0 2px;
+}
+.small{ flex:0 0 120px; }
+.small.line{
+  border:none;
+  border-bottom:1px solid #000;
+}
+.photo{
+  border:1px solid #000;
+  width:120px;
+  height:160px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:13px;
+}
+.flex{
+  display:flex;
+  justify-content:space-between;
+  gap:20px;
+}
+.checkbox span{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid #000;
+  width:12px;
+  height:12px;
+  margin-right:4px;
+  font-size:10px;
+  font-weight:900;
+  line-height:1;
+}
+.declaration{
+  margin-top:15px;
+  font-size:13px;
+  text-align:left;
+}
+.declaration b{
+  display:block;
+  text-align:left;
+}
+.declaration ol{
+  margin:8px 0 0 15px;
+  padding:0;
+}
+.declaration li{ margin-bottom:8px; }
+
+.family{
+  display:flex;
+  gap:20px;
+  margin-top:20px;
+}
+.family-photo{
+  width:120px;
+  height:150px;
+  border:1px solid #000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
+}
+
+.signature{
+  margin-top:40px;
+  display:flex;
+  justify-content:space-between;
+  font-size:14px;
+}
+.sig-line{
+  margin-top:80px;
+  border-top:1px solid #000;
+  width:200px;
+  text-align:center;
+  padding-top:5px;
+  white-space:nowrap;
+}
+.field,
+.row,
+h1, h2,
+.center b {
+  font-weight:700;
+}
+.line,
+.small.line {
+  font-weight:normal;
+}
+</style>
+</head>
+
+<body>
+<div class="page">
+
+  <div class="row">
+    <div>
+      <div>Date Of Mantra Diksha: {{MANTRA_DATE}}</div>
+      <div style="margin-top:20px;">Card No: <b>{{CARD_NO}}</b></div>
+    </div>
+    <div>Form No: {{FORM_NO}}</div>
+  </div>
+
+  <div class="center">
+    <h1>DEVOTEE INFORMATION &amp; DECLARATION FORM</h1>
+    <h2>(शिष्य परिचय एवं घोषणा पत्र)</h2>
+  </div>
+
+  <div class="flex">
+    <div style="flex:1;">
+      <div class="field">Name <span class="line">{{NAME}}</span></div>
+      <div class="field">{{GUARDIAN_LABEL}} : <span class="line">{{GUARDIAN_NAME}}</span></div>
+
+      <div class="field checkbox">
+        Gender:
+        <span>{{G_MALE}}</span> Male
+        <span>{{G_FEMALE}}</span> Female
+        &nbsp;&nbsp; Age :
+        <span class="small line">{{AGE}}</span>
+      </div>
+
+      <div class="field checkbox">
+        Marital Status:
+        <span>{{MS_MARRIED}}</span> Married
+        <span>{{MS_UNMARRIED}}</span> Unmarried
+        <span>{{MS_DIVORCEE}}</span> Divorcee
+        <span>{{MS_VIRAKT}}</span> Virakt
+      </div>
+
+      <div class="field">
+        <div style="display:flex; align-items:flex-end; gap:6px; width:100%;">
+          <span>Address:</span>
+          <span class="line" style="width:100%;">{{ADDRESS_LINE1}}</span>
+        </div>
+        <div class="line" style="width:100%; margin-top:18px;">{{ADDRESS_LINE2}}</div>
+      </div>
+
+      <div class="field">
+        City: <span class="small line">{{CITY}}</span>
+        State: <span class="small line">{{STATE}}</span>
+        PIN: <span class="small line">{{PIN}}</span>
+      </div>
+
+      <div class="field">Occupation: <span class="line">{{OCCUPATION}}</span></div>
+
+      <div class="field">
+        Mobile No: <span class="small line">{{PHONE_FULL}}</span>
+        WhatsApp No: <span class="small line">{{WHATSAPP_FULL}}</span>
+      </div>
+
+      <div class="field">{{ID_LABEL}}: <span class="line">{{ID_VALUE}}</span></div>
+    </div>
+
+    <div class="photo">Applicant<br>Photo</div>
+  </div>
+
+  <div class="declaration">
+    <b><u>DECLARATION</u></b>
+    <ol>
+      <li>
+        मैं अक्सर श्रीधाम वृन्दावन में दर्शन एवं आध्यात्मिक क्रिया-कलापों में भाग लेने के लिए आता रहता / आती रहती हूँ। मैं पूर्ण रुपेण आध्यात्मिक भावनाओं से ओतप्रोत हूँ मनुष्य जीवन का परम लक्ष्य भगवत प्राप्ति करना चाहता / चाहती हूँ, इसलिए मैं स्वयं की प्रबल इच्छा व प्राथना और पारिवारिक जनों की पूर्ण सहमति से ही दीक्षा ले रहा / रही हूँ ।
+      </li>
+
+      <li>
+        आजकल का वातावरण बहुत ही दूषित है और समाज / शहर के लोग तरह-तरह के आरोप-प्रत्यारोप लगाने से नही चूकते हैं, चूंकि दीक्षा लेना मेरा स्वयं का निर्णय है इसलिए भविष्य में यदि मेरे परिवारिकजन या समाज / शहर का कोई भी व्यक्ति मेरी दीक्षा या वृंदावन वास या मेरे किसी भी अन्य भागवतिक निर्णय में किसी भी प्रकार का भी वाद-विवाद उत्पन्न करता हैतो यह विवाद करने का उन्हे कोई अधिकार प्राप्त नहीं होगा क्यूंकी पूर्व में परिजनों की आज्ञा से ही मैने दीक्षा ली है इसलिए किसी के भी द्वारा किये गये वाद-विवाद को पूर्ण रुपेण अस्वीकार माना जाये |
+      </li>
+    </ol>
+
+    <div class="checkbox">
+      <span>{{DECL_OK}}</span> मेरे द्वारा ऊपर दी गई सारी जानकारी पूरी तरह से सही व प्रमाणिक है।
+    </div>
+  </div>
+
+  <div class="family">
+    <div class="family-photo">Family<br>Member<br>Photo</div>
+    <div class="family-photo">Family<br>Member<br>Photo</div>
+
+    <div style="flex:1;">
+      <div class="center"><b><u>FAMILY MEMBER DETAILS</u></b></div>
+      <div class="field">Name : <span class="line">{{FM_NAME}}</span></div>
+
+      <div class="field">
+        <span>Relation :</span>
+        <span class="line" style="flex:1;">{{FM_RELATION}}</span>
+      </div>
+
+      <div class="field">Mobile : <span class="line">{{FM_MOBILE}}</span></div>
+    </div>
+  </div>
+
+  <div class="center" style="margin-top:30px; margin-left:80px;">
+    <div class="sig-line">Family Member's Signature</div>
+  </div>
+
+  <div class="signature">
+    <div style="position: relative; top: 10px;">Date Of Form Fill Up: {{FORM_FILL_DATE}}</div>
+    <div style="position: relative; top: -70px;" class="sig-line">Applicant Signature</div>
+  </div>
+
+</div>
+</body>
+</html>
