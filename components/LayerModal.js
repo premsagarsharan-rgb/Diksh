@@ -13,8 +13,6 @@ export default function LayerModal({
   maxWidth = "max-w-6xl",
   layerName = "",
   zIndexBoost = 0,
-
-  // ✅ prevent outside click/touch close
   disableBackdropClose = false,
 }) {
   const stackApi = useLayerStack();
@@ -28,16 +26,23 @@ export default function LayerModal({
   const register = stackApi?.register;
   const unregister = stackApi?.unregister;
   const bringToTop = stackApi?.bringToTop;
+  const registerClose = stackApi?.registerClose;
+  const unregisterClose = stackApi?.unregisterClose;
   const stack = stackApi?.stack || [];
 
   useEffect(() => {
     if (!open || !register || !unregister || !bringToTop) return;
-
     register(id);
     bringToTop(id);
-
     return () => unregister(id);
   }, [open, id, register, unregister, bringToTop]);
+
+  // ✅ Register close handler for back button support
+  useEffect(() => {
+    if (!open || !registerClose || !unregisterClose || !onClose) return;
+    registerClose(id, onClose);
+    return () => unregisterClose(id);
+  }, [open, id, onClose, registerClose, unregisterClose]);
 
   useEffect(() => {
     if (!open) return;
@@ -81,11 +86,9 @@ export default function LayerModal({
                 </span>
                 {layerName ? <span className="text-[11px] text-white/60">{layerName}</span> : null}
               </div>
-
               {sub ? <div className="text-xs text-white/60">{sub}</div> : null}
               {title ? <div className="text-xl font-bold truncate">{title}</div> : null}
             </div>
-
             <button
               onClick={onClose}
               className="shrink-0 w-11 h-11 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 text-white/80 text-2xl leading-none"
@@ -96,7 +99,6 @@ export default function LayerModal({
             </button>
           </div>
         </div>
-
         <div className="p-4 max-h-[80vh] overflow-auto pr-1">{children}</div>
       </div>
     </div>,

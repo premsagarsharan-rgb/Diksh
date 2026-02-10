@@ -168,9 +168,8 @@ export default function DashboardShell({ session }) {
             <button
               className={buttonCls}
               onClick={async () => {
-                await fetch("/api/auth/logout", { method: "POST" });
-                window.location.href = "/login";
-              }}
+                 await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+  window.location.href = "/login";             }}
               type="button"
             >
               Logout
