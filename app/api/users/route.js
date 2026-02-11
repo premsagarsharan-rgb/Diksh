@@ -6,7 +6,6 @@ import { getSession } from "@/lib/session";
 
 export const runtime = "nodejs";
 
-// ✅ updated permission keys (new + legacy)
 const PERM_KEYS = [
   "recent",
   "add",
@@ -16,7 +15,7 @@ const PERM_KEYS = [
   "tracker",
   "screensCreate",
   "screensView",
-  "screens", // legacy
+  "screens",
 ];
 
 async function ensureUserIndexes(db) {
@@ -27,18 +26,13 @@ async function ensureUserIndexes(db) {
 
 function normalizePermissionsForSave(input) {
   const raw = { ...(input || {}) };
-
-  // legacy mapping: screens -> both
   if (typeof raw.screens === "boolean") {
     if (typeof raw.screensCreate !== "boolean") raw.screensCreate = raw.screens;
     if (typeof raw.screensView !== "boolean") raw.screensView = raw.screens;
   }
-
-  // keep legacy in sync
   if (typeof raw.screensCreate === "boolean" || typeof raw.screensView === "boolean") {
     raw.screens = !!(raw.screensCreate || raw.screensView);
   }
-
   const clean = {};
   for (const k of PERM_KEYS) {
     if (typeof raw?.[k] === "boolean") clean[k] = raw[k];
@@ -54,15 +48,36 @@ export async function GET() {
   const db = await getDb();
   await ensureUserIndexes(db);
 
-  const items = await db
+  const users = await db
     .collection("users")
     .find({})
     .sort({ createdAt: -1 })
     .project({ passwordHash: 0 })
     .toArray();
 
-  const out = items.map((u) => ({ ...u, _id: String(u._id) }));
-  return NextResponse.json({ items: out });
+  // ✅ Clean session data — don't expose tokenHash to frontend
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+  const items = users.map((u) => {
+    const sessions = Array.isArray(u.activeSessions) ? u.activeSessions : [];
+    const validSessions = sessions.filter(
+      (s) => s.createdAt && new Date(s.createdAt) > sevenDaysAgo
+    );
+
+    return {
+      ...u,
+      _id: String(u._id),
+      maxDevices: u.maxDevices || 1,
+      activeSessionCount: validSessions.length,
+      activeSessions: validSessions.map((s) => ({
+        deviceLabel: s.deviceLabel || "Unknown",
+        ip: s.ip || "unknown",
+        createdAt: s.createdAt,
+      })),
+    };
+  });
+
+  return NextResponse.json({ items });
 }
 
 export async function POST(req) {
@@ -92,12 +107,13 @@ export async function POST(req) {
     passwordHash: await bcrypt.hash(pass, 12),
     role,
     active: true,
+    maxDevices: 1,
+    activeSessions: [],
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
   if (role === "USER") {
-    // ✅ default perms + sanitize
     const defaults = {
       recent: true,
       add: true,
@@ -108,7 +124,6 @@ export async function POST(req) {
       screensCreate: false,
       screensView: false,
     };
-
     doc.permissions = normalizePermissionsForSave({ ...defaults, ...(permissions || {}) });
   } else {
     doc.permissions = null;
