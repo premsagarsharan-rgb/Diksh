@@ -1,3 +1,4 @@
+// components/ThemeToggle.js
 "use client";
 
 import { useTheme } from "@/components/ThemeProvider";
@@ -12,10 +13,15 @@ export default function ThemeToggle() {
     <button
       type="button"
       onClick={t.toggle}
-      className="px-3 py-2 rounded-2xl bg-white/10 border border-white/10 hover:bg-white/15 transition text-sm"
-      title="Theme"
+      className="w-10 h-10 rounded-full flex items-center justify-center text-lg border transition-all duration-300"
+      style={{
+        background: isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.06)",
+        borderColor: isLight ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.10)",
+        color: isLight ? "#b45309" : "#60a5fa",
+      }}
+      title={isLight ? "Switch to Dark" : "Switch to Light"}
     >
-      {isLight ? "Light" : "Dark"}
+      {isLight ? "☀️" : "🌙"}
     </button>
   );
 }
