@@ -49,6 +49,9 @@ export default function ContainerPanel({
   const [reservedOpen, setReservedOpen] = useState(true);
   const [reservedShowAll, setReservedShowAll] = useState(false);
 
+  // Mobile action dock
+  const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
+
   const isReady = !!container && (selectedDate ? container?.date === selectedDate : true);
   const isInline = variant === "inline";
 
@@ -262,6 +265,66 @@ export default function ContainerPanel({
     </div>
   ) : null;
 
+  // Mobile dock colors (black background as requested)
+  const dockBtnBg = isLight ? "rgba(15,23,42,0.92)" : "rgba(0,0,0,0.72)";
+  const dockBtnBorder = "rgba(255,255,255,0.12)";
+  const dockBtnText = "rgba(255,255,255,0.92)";
+
+  // Build action items for mobile dock (close on click)
+  const mobileActions = [
+    ...(role === "ADMIN"
+      ? [
+          {
+            key: "limit",
+            icon: "+",
+            title: isLocked ? "Unlock first to change limit" : "Increase limit",
+            disabled: pushing || isLocked,
+            onClick: () => {
+              if (isLocked) {
+                onShowWarn?.("🔒 Locked", "Container is locked. Unlock it first to change limit.");
+                return;
+              }
+              onIncreaseLimit?.();
+            },
+          },
+        ]
+      : []),
+    {
+      key: "printAll",
+      icon: "🖨",
+      title: "Print all forms",
+      disabled: pushing,
+      onClick: () => onPrintAll?.(),
+    },
+    {
+      key: "add",
+      icon: "＋",
+      title: isLocked ? "Container locked — cannot add" : "Add customer",
+      disabled: pushing || isLocked,
+      onClick: () => {
+        if (isLocked) {
+          onShowWarn?.("🔒 Locked", "Container is locked. Cannot add customers.\n\nAdmin can temporarily unlock.");
+          return;
+        }
+        onOpenAdd?.();
+      },
+    },
+    {
+      key: "printList",
+      icon: "📄",
+      title: "Print list",
+      disabled: pushing,
+      onClick: () => onPrintList?.(),
+    },
+    {
+      key: "toggleList",
+      icon: showList ? "👁" : "👁‍🗨",
+      title: showList ? "Hide list" : "Show list",
+      disabled: pushing,
+      onClick: () => onToggleList?.(),
+    },
+  ];
+
   return (
     <div
       style={{
@@ -350,45 +413,60 @@ export default function ContainerPanel({
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5" style={{ flexShrink: 0 }}>
-          {role === "ADMIN" && (
-            <ActionIconBtn
-              icon="+"
-              title={isLocked ? "Unlock first to change limit" : "Increase limit"}
-              disabled={pushing || isLocked}
-              onClick={() => {
-                if (isLocked) {
-                  onShowWarn?.("🔒 Locked", "Container is locked. Unlock it first to change limit.");
-                  return;
-                }
-                onIncreaseLimit?.();
-              }}
+        {/* Actions */}
+        <div style={{ flexShrink: 0, position: "relative", zIndex: 120 }}>
+          {isInline ? (
+            <MobileActionsDock
+              open={mobileActionsOpen}
+              setOpen={setMobileActionsOpen}
+              actions={mobileActions}
               c={c}
-              solid
+              btnBg={dockBtnBg}
+              btnBorder={dockBtnBorder}
+              btnText={dockBtnText}
             />
+          ) : (
+            <div className="flex items-center gap-1.5">
+              {role === "ADMIN" && (
+                <ActionIconBtn
+                  icon="+"
+                  title={isLocked ? "Unlock first to change limit" : "Increase limit"}
+                  disabled={pushing || isLocked}
+                  onClick={() => {
+                    if (isLocked) {
+                      onShowWarn?.("🔒 Locked", "Container is locked. Unlock it first to change limit.");
+                      return;
+                    }
+                    onIncreaseLimit?.();
+                  }}
+                  c={c}
+                  solid
+                />
+              )}
+              <ActionIconBtn icon="🖨" title="Print all forms" disabled={pushing} onClick={onPrintAll} c={c} />
+              <ActionIconBtn
+                icon="＋"
+                title={isLocked ? "Container locked — cannot add" : "Add customer"}
+                disabled={pushing || isLocked}
+                onClick={() => {
+                  if (isLocked) {
+                    onShowWarn?.("🔒 Locked", "Container is locked. Cannot add customers.\n\nAdmin can temporarily unlock.");
+                    return;
+                  }
+                  onOpenAdd?.();
+                }}
+                c={c}
+              />
+              <ActionIconBtn icon="📄" title="Print list" disabled={pushing} onClick={onPrintList} c={c} />
+              <ActionIconBtn
+                icon={showList ? "👁" : "👁‍🗨"}
+                title={showList ? "Hide list" : "Show list"}
+                disabled={pushing}
+                onClick={onToggleList}
+                c={c}
+              />
+            </div>
           )}
-          <ActionIconBtn icon="🖨" title="Print all forms" disabled={pushing} onClick={onPrintAll} c={c} />
-          <ActionIconBtn
-            icon="＋"
-            title={isLocked ? "Container locked — cannot add" : "Add customer"}
-            disabled={pushing || isLocked}
-            onClick={() => {
-              if (isLocked) {
-                onShowWarn?.("🔒 Locked", "Container is locked. Cannot add customers.\n\nAdmin can temporarily unlock.");
-                return;
-              }
-              onOpenAdd?.();
-            }}
-            c={c}
-          />
-          <ActionIconBtn icon="📄" title="Print list" disabled={pushing} onClick={onPrintList} c={c} />
-          <ActionIconBtn
-            icon={showList ? "👁" : "👁‍🗨"}
-            title={showList ? "Hide list" : "Show list"}
-            disabled={pushing}
-            onClick={onToggleList}
-            c={c}
-          />
         </div>
       </div>
 
@@ -402,7 +480,7 @@ export default function ContainerPanel({
         variant={isInline ? "compact" : "default"}
       />
 
-      {/* MOBILE: keep blueprint stacked (top) */}
+      {/* MOBILE: blueprint stacked */}
       {isInline && blueprintPanel ? <div style={{ marginBottom: 12 }}>{blueprintPanel}</div> : null}
 
       {/* Mobile tabs */}
@@ -437,7 +515,6 @@ export default function ContainerPanel({
           <div>{blueprintPanel}</div>
         </div>
       ) : (
-        // Normal layout
         <div style={{ marginTop: 12 }}>{isInline ? (mobileTab === "LIST" ? listContent : null) : listContent}</div>
       )}
 
@@ -451,7 +528,119 @@ export default function ContainerPanel({
   );
 }
 
-/* ═══════ Internal Sub-Components ═══════ */
+/* ═══════ Mobile Ultra Action Dock ═══════ */
+function MobileActionsDock({ open, setOpen, actions, c, btnBg, btnBorder, btnText }) {
+  const baseSize = 40;
+  const gap = 8;
+  const step = baseSize + gap;
+
+  return (
+    <div
+      style={{
+        position: "relative",
+        width: baseSize,
+        height: baseSize,
+        zIndex: 999,
+        isolation: "isolate",
+      }}
+    >
+      {actions.map((a, idx) => {
+        const offset = (idx + 1) * step;
+        const isDisabled = !!a.disabled;
+
+        return (
+          <button
+            key={a.key}
+            type="button"
+            title={a.title}
+            disabled={!open || isDisabled}
+            onClick={() => {
+              setOpen(false);
+              setTimeout(() => a.onClick?.(), 80);
+            }}
+            style={{
+              position: "absolute",
+              right: 0,
+              top: 0,
+              width: baseSize,
+              height: baseSize,
+              borderRadius: 14,
+
+              // ✅ Black background applied
+              background: btnBg,
+              border: `1px solid ${btnBorder}`,
+              color: btnText,
+
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 14,
+              fontWeight: 800,
+              cursor: !open || isDisabled ? "not-allowed" : "pointer",
+
+              opacity: open ? (isDisabled ? 0.35 : 1) : 0,
+              transform: open ? `translateX(-${offset}px)` : "translateX(0px)",
+              pointerEvents: open ? "auto" : "none",
+
+              transitionProperty: "transform, opacity",
+              transitionDuration: "220ms, 160ms",
+              transitionTimingFunction: "cubic-bezier(0.2, 0.8, 0.2, 1), ease",
+              transitionDelay: open ? `${idx * 45}ms` : "0ms",
+              willChange: "transform, opacity",
+
+              zIndex: 200 - idx,
+            }}
+          >
+            {a.icon}
+          </button>
+        );
+      })}
+
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        title={open ? "Close actions" : "Open actions"}
+        style={{
+          position: "absolute",
+          right: 0,
+          top: 0,
+          width: baseSize,
+          height: baseSize,
+          borderRadius: 14,
+
+          // ✅ Black background applied
+          background: btnBg,
+          border: `1px solid ${btnBorder}`,
+          color: btnText,
+
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 16,
+          fontWeight: 900,
+          cursor: "pointer",
+          transition: "transform 160ms ease",
+          transform: open ? "rotate(90deg) scale(1.02)" : "rotate(0deg)",
+          willChange: "transform",
+          zIndex: 9999,
+        }}
+        onPointerDown={(e) =>
+          (e.currentTarget.style.transform = open ? "rotate(90deg) scale(0.98)" : "scale(0.98)")
+        }
+        onPointerUp={(e) =>
+          (e.currentTarget.style.transform = open ? "rotate(90deg) scale(1.02)" : "rotate(0deg)")
+        }
+        onPointerLeave={(e) =>
+          (e.currentTarget.style.transform = open ? "rotate(90deg) scale(1.02)" : "rotate(0deg)")
+        }
+      >
+        {open ? "×" : "☰"}
+      </button>
+    </div>
+  );
+}
+
+/* ═══════ Sub-Components ═══════ */
 
 function BlueprintReservedCard({ c, assignment, customer, gender, onClick }) {
   const kind = assignment?.kind || "SINGLE";
@@ -660,47 +849,15 @@ function MobileStatsContent({ container, counts, reservedCounts, mode, c }) {
   return (
     <div className="space-y-3" style={{ marginBottom: 12 }}>
       <div style={{ borderRadius: 18, border: `1px solid ${c.panelBorder}`, background: c.panelBg, padding: 14 }}>
-        <div style={{ fontSize: 11, color: c.t3, fontWeight: 500, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-          Gender Breakdown
-        </div>
-        <div className="space-y-3">
-          {[
-            { label: "👨 Male", value: counts.male, bar: c.maleText, text: c.maleText },
-            { label: "👩 Female", value: counts.female, bar: c.femaleText, text: c.femaleText },
-            ...(counts.other > 0 ? [{ label: "Other", value: counts.other, bar: c.otherText, text: c.otherText }] : []),
-          ].map((item, i) => (
-            <div key={i}>
-              <div className="flex items-center justify-between" style={{ marginBottom: 4 }}>
-                <span style={{ fontSize: 11, color: item.text, fontWeight: 600 }}>{item.label}</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: c.t1 }}>{item.value}</span>
-              </div>
-              <div style={{ height: 5, borderRadius: 999, background: c.gaugeTrack, overflow: "hidden" }}>
-                <div
-                  style={{
-                    height: "100%",
-                    borderRadius: 999,
-                    background: item.bar,
-                    width: counts.total ? `${(item.value / counts.total) * 100}%` : "0%",
-                    transition: "width 0.4s ease",
-                    opacity: 0.7,
-                  }}
-                />
-              </div>
+        <div style={{ fontSize: 11, color: c.t3, fontWeight: 500, marginBottom: 6 }}>Capacity</div>
+        <div className="flex items-center justify-between">
+          <div>
+            <div style={{ fontSize: 11, color: c.t4 }}>Used</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: c.t1 }}>
+              {used} / {limit}
             </div>
-          ))}
-        </div>
-      </div>
-
-      {isDiksha && (
-        <div style={{ borderRadius: 18, border: `1px solid ${c.panelBorder}`, background: c.panelBg, padding: 14 }}>
-          <div style={{ fontSize: 11, color: c.t3, fontWeight: 500, marginBottom: 6 }}>Capacity</div>
-          <div className="flex items-center justify-between">
-            <div>
-              <div style={{ fontSize: 11, color: c.t4 }}>Used</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: c.t1 }}>
-                {used} / {limit}
-              </div>
-            </div>
+          </div>
+          {isDiksha ? (
             <span
               style={{
                 padding: "4px 14px",
@@ -708,15 +865,17 @@ function MobileStatsContent({ container, counts, reservedCounts, mode, c }) {
                 fontSize: 13,
                 fontWeight: 700,
                 background: remaining <= 0 ? c.gaugeFullBg : remaining <= 3 ? c.gaugeWarnBg : c.gaugeOkBg,
-                border: `1px solid ${remaining <= 0 ? c.gaugeFullBorder : remaining <= 3 ? c.gaugeWarnBorder : c.gaugeOkBorder}`,
+                border: `1px solid ${
+                  remaining <= 0 ? c.gaugeFullBorder : remaining <= 3 ? c.gaugeWarnBorder : c.gaugeOkBorder
+                }`,
                 color: remaining <= 0 ? c.gaugeFullText : remaining <= 3 ? c.gaugeWarnText : c.gaugeOkText,
               }}
             >
               {remaining} left
             </span>
-          </div>
+          ) : null}
         </div>
-      )}
+      </div>
     </div>
   );
 }
