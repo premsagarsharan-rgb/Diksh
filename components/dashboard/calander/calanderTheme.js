@@ -1,5 +1,5 @@
 // components/dashboard/calander/calanderTheme.js
-// Calendar Theme Tokens — Lock system tokens added
+// Calendar Theme Tokens — Lock system tokens + Blueprint Reserved UI added
 // Dark: indigo accent | Light: amber/slate accent
 
 export const CT = {
@@ -131,6 +131,17 @@ export const CT = {
     reservedBorder: "rgba(52,211,153,0.18)",
     reservedText: "rgba(110,231,183,0.85)",
 
+    // ─── Blueprint Reserved UI (Diksha) ───
+    blueprintBg: "rgba(59,130,246,0.08)",
+    blueprintBorder: "rgba(96,165,250,0.20)",
+    blueprintText: "rgba(147,197,253,0.92)",
+    blueprintMuted: "rgba(147,197,253,0.62)",
+    blueprintGrid: "rgba(59,130,246,0.16)",
+    blueprintBadgeBg: "rgba(59,130,246,0.12)",
+    blueprintBadgeBorder: "rgba(96,165,250,0.22)",
+    blueprintBadgeText: "rgba(147,197,253,0.92)",
+    blueprintDot: "#60a5fa",
+
     // ─── History ───
     historyBg: "rgba(16,185,129,0.05)",
     historyBorder: "rgba(52,211,153,0.18)",
@@ -237,7 +248,6 @@ export const CT = {
     lockBadgeText: "#fca5a5",
     lockDisabledOpacity: 0.45,
     lockOverlay: "rgba(0,0,0,0.30)",
-    // Unlock (admin)
     unlockBg: "rgba(16,185,129,0.08)",
     unlockBorder: "rgba(52,211,153,0.20)",
     unlockText: "#34d399",
@@ -247,7 +257,6 @@ export const CT = {
     unlockTimerBorder: "rgba(251,191,36,0.20)",
     unlockTimerText: "#fcd34d",
     unlockTimerAccent: "#fbbf24",
-    // Duration picker
     durationOptionBg: "rgba(255,255,255,0.04)",
     durationOptionBorder: "rgba(255,255,255,0.08)",
     durationOptionHover: "rgba(255,255,255,0.08)",
@@ -400,6 +409,17 @@ export const CT = {
     reservedBg: "rgba(22,163,74,0.05)",
     reservedBorder: "rgba(22,163,74,0.10)",
     reservedText: "#059669",
+
+    // ─── Blueprint Reserved UI (Light) ───
+    blueprintBg: "rgba(37,99,235,0.05)",
+    blueprintBorder: "rgba(37,99,235,0.12)",
+    blueprintText: "#1d4ed8",
+    blueprintMuted: "rgba(29,78,216,0.60)",
+    blueprintGrid: "rgba(37,99,235,0.14)",
+    blueprintBadgeBg: "rgba(37,99,235,0.06)",
+    blueprintBadgeBorder: "rgba(37,99,235,0.12)",
+    blueprintBadgeText: "#1d4ed8",
+    blueprintDot: "#2563eb",
 
     // ─── History ───
     historyBg: "rgba(22,163,74,0.04)",
@@ -603,12 +623,9 @@ export function getLockStatus(container, counts, reservedCounts) {
   const remaining = Math.max(0, limit - used);
   const isFull = used >= limit;
 
-  // Check if container is manually unlocked (with expiry)
   const unlockExpiresAt = container.unlockExpiresAt ? new Date(container.unlockExpiresAt) : null;
   const now = new Date();
   const isUnlocked = unlockExpiresAt && unlockExpiresAt > now;
-
-  // Container is locked when full AND not manually unlocked
   const isLocked = isFull && !isUnlocked;
 
   return { isLocked, isFull, isUnlocked, unlockExpiresAt, remaining, used, limit };

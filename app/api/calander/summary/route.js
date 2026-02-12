@@ -14,68 +14,118 @@ export async function GET(req) {
   const to = searchParams.get("to");
   const mode = searchParams.get("mode");
 
-  if (!from || !to || !mode) return NextResponse.json({ error: "Missing from/to/mode" }, { status: 400 });
+  if (!from || !to || !mode) {
+    return NextResponse.json({ error: "Missing from/to/mode" }, { status: 400 });
+  }
 
   const db = await getDb();
 
-  const rows = await db.collection("calendarContainers").aggregate([
+  const pipeline = [
     { $match: { date: { $gte: from, $lte: to }, mode } },
+
+    // Count IN_CONTAINER genders (actual assignments inside this container)
     {
       $lookup: {
         from: "calendarAssignments",
         let: { cid: "$_id" },
         pipeline: [
-          { $match: { $expr: { $and: [{ $eq: ["$containerId", "$$cid"] }, { $eq: ["$status", "IN_CONTAINER"] }] } } },
+          {
+            $match: {
+              $expr: {
+                $and: [{ $eq: ["$containerId", "$$cid"] }, { $eq: ["$status", "IN_CONTAINER"] }],
+              },
+            },
+          },
           {
             $lookup: {
               from: "sittingCustomers",
               localField: "customerId",
               foreignField: "_id",
               as: "cust",
-            }
+            },
           },
-          { $unwind: "$cust" },
-          {
-            $project: {
-              gender: "$cust.gender",
-            }
-          }
+          // preserve if customer missing (avoid dropping assignment)
+          { $unwind: { path: "$cust", preserveNullAndEmptyArrays: true } },
+          { $project: { gender: { $ifNull: ["$cust.gender", "OTHER"] } } },
         ],
-        as: "genders"
-      }
+        as: "genders",
+      },
     },
-    // ✅ TASK 2: Also count history records for MEETING containers
-    {
+  ];
+
+  // ✅ Only for DIKSHA: reserved/occupied holds from MEETING containers
+  if (mode === "DIKSHA") {
+    pipeline.push({
+      $lookup: {
+        from: "calendarAssignments",
+        let: { cid: "$_id" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$occupiedContainerId", "$$cid"] },
+                  { $eq: ["$meetingDecision", "PENDING"] },
+                  { $eq: ["$status", "IN_CONTAINER"] },
+                ],
+              },
+            },
+          },
+          { $count: "count" },
+        ],
+        as: "reservedCount",
+      },
+    });
+  }
+
+  // ✅ Only for MEETING: history count
+  if (mode === "MEETING") {
+    pipeline.push({
       $lookup: {
         from: "calendarAssignmentHistory",
         let: { cid: "$_id" },
-        pipeline: [
-          { $match: { $expr: { $eq: ["$containerId", "$$cid"] } } },
-          { $count: "count" },
-        ],
-        as: "historyCount"
-      }
+        pipeline: [{ $match: { $expr: { $eq: ["$containerId", "$$cid"] } } }, { $count: "count" }],
+        as: "historyCount",
+      },
+    });
+  }
+
+  // ✅ Final project (IMPORTANT: use $literal:0 to avoid exclusion projection error)
+  pipeline.push({
+    $project: {
+      date: 1,
+      mode: 1,
+      genders: 1,
+
+      reserved:
+        mode === "DIKSHA"
+          ? { $ifNull: [{ $arrayElemAt: ["$reservedCount.count", 0] }, 0] }
+          : { $literal: 0 },
+
+      history:
+        mode === "MEETING"
+          ? { $ifNull: [{ $arrayElemAt: ["$historyCount.count", 0] }, 0] }
+          : { $literal: 0 },
     },
-    {
-      $project: {
-        date: 1,
-        mode: 1,
-        genders: 1,
-        historyCount: { $ifNull: [{ $arrayElemAt: ["$historyCount.count", 0] }, 0] },
-      }
-    }
-  ]).toArray();
+  });
+
+  const rows = await db.collection("calendarContainers").aggregate(pipeline).toArray();
 
   const map = {};
   for (const r of rows) {
-    const male = r.genders.filter(x => x.gender === "MALE").length;
-    const female = r.genders.filter(x => x.gender === "FEMALE").length;
-    const other = r.genders.filter(x => x.gender === "OTHER").length;
+    const male = (r.genders || []).filter((x) => x?.gender === "MALE").length;
+    const female = (r.genders || []).filter((x) => x?.gender === "FEMALE").length;
+    const other = Math.max(0, (r.genders || []).length - male - female);
+
     const total = male + female + other;
+
     map[r.date] = {
-      total, male, female, other,
-      // ✅ History count for meeting containers
-      history: r.historyCount || 0,
+      total,
+      male,
+      female,
+      other,
+      history: r.history || 0,
+      reserved: r.reserved || 0,
     };
   }
 
