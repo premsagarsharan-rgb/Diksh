@@ -8,7 +8,8 @@ import { useTheme } from "@/components/ThemeProvider";
 
 import RecentCustomer from "@/components/dashboard/RecentCustomer";
 import AddCustomer from "@/components/dashboard/AddCustomer";
-import Calander from "@/components/dashboard/Calander";
+import MeetingCalander from "@/components/dashboard/MeetingCalander";
+import DikshaCalander from "@/components/dashboard/DikshaCalander";
 import Pending from "@/components/dashboard/Pending";
 import SittingData from "@/components/dashboard/SittingData";
 import UserCreate from "@/components/dashboard/UserCreate";
@@ -134,13 +135,82 @@ function getGreeting() {
 }
 
 const ICONS = {
-  recent: "📋", add: "➕", calander: "📅", pending: "⏸️",
+  recent: "📋", add: "➕", meeting: "📋", diksha: "🪔", pending: "⏸️",
   sitting: "🪑", trash: "🗑️", tracker: "📍",
   screensCreate: "🖥️", screensView: "👁️",
   usercreate: "👤", usermanage: "⚙️",
 };
 
-const NAV_KEYS = ["recent", "add", "calander", "pending"];
+const NAV_KEYS = ["recent", "add", "meeting", "pending"];
+
+/* ═══════════════════════════════════════════════
+   CalanderTile — Special tile that renders both buttons
+   ═══════════════════════════════════════════════ */
+
+function CalanderTile({ c, isLight, role, idx }) {
+  return (
+    <div
+      className="relative text-left"
+      style={{
+        borderRadius: isLight ? 22 : 24,
+        border: `1px solid ${c.bCard}`,
+        background: c.card,
+        boxShadow: isLight ? c.neu : c.glow,
+        color: c.t1,
+        overflow: "hidden",
+        animationDelay: `${idx * 50}ms`,
+      }}
+    >
+      {/* Inner content */}
+      <div className="relative z-[1] w-full p-6 max-md:p-4">
+        {/* Icon + Title */}
+        <div className="flex items-start justify-between mb-4">
+          <div
+            className="relative flex items-center justify-center rounded-2xl"
+            style={{
+              width: 56, height: 56,
+              background: c.iconBg,
+              fontSize: 28,
+            }}
+          >
+            📅
+            <div
+              className="absolute -inset-1 rounded-2xl"
+              style={{ background: c.iconGlow }}
+            />
+          </div>
+          <div
+            className="hidden md:block w-2 h-2 rounded-full"
+            style={{
+              background: "#22c55e",
+              boxShadow: "0 0 6px rgba(34,197,94,0.6)",
+              animation: "pulse2 2s ease-in-out infinite",
+            }}
+          />
+        </div>
+
+        <div
+          className="text-[10.5px] font-bold uppercase tracking-[0.8px] mb-1.5"
+          style={{ color: c.t3 }}
+        >
+          Containers
+        </div>
+        <div
+          className="text-[20px] max-md:text-[15px] font-extrabold tracking-[-0.4px] leading-tight mb-4"
+          style={{ color: c.t1 }}
+        >
+          Calander
+        </div>
+
+        {/* Two buttons side by side */}
+        <div className="flex gap-3">
+          <MeetingCalander role={role} />
+          <DikshaCalander role={role} />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /* ═══════════════════════════════════════════════
    Background — GPU Composited Only
@@ -149,7 +219,6 @@ const NAV_KEYS = ["recent", "add", "calander", "pending"];
 function BgLayer({ c, isLight }) {
   return (
     <div className="fixed inset-0 z-0 pointer-events-none" aria-hidden>
-      {/* Orb A — top-left */}
       <div
         className="absolute will-change-transform"
         style={{
@@ -160,7 +229,6 @@ function BgLayer({ c, isLight }) {
           animation: "orb1 22s ease-in-out infinite",
         }}
       />
-      {/* Orb B — right */}
       <div
         className="absolute will-change-transform"
         style={{
@@ -172,7 +240,6 @@ function BgLayer({ c, isLight }) {
           animationDelay: "-6s",
         }}
       />
-      {/* Orb C — bottom */}
       <div
         className="absolute will-change-transform"
         style={{
@@ -184,7 +251,6 @@ function BgLayer({ c, isLight }) {
           animationDelay: "-14s",
         }}
       />
-      {/* Grid */}
       <div
         className="fixed inset-0"
         style={{
@@ -259,7 +325,6 @@ function TileCard({ tile, onClick, c, isLight, idx }) {
         e.currentTarget.style.transform = "translateY(-6px) scale(1.015)";
       }}
     >
-      {/* ── Spotlight layer ── */}
       <div
         className="absolute inset-0 opacity-0 group-hover:opacity-100 pointer-events-none"
         style={{
@@ -268,8 +333,6 @@ function TileCard({ tile, onClick, c, isLight, idx }) {
           transition: "opacity 0.2s",
         }}
       />
-
-      {/* ── Neon top edge ── */}
       <div
         className="absolute top-0 left-[10%] right-[10%] h-[2px] opacity-0 group-hover:opacity-100"
         style={{
@@ -278,10 +341,7 @@ function TileCard({ tile, onClick, c, isLight, idx }) {
           transition: "opacity 0.25s",
         }}
       />
-
-      {/* ── Inner content: Desktop vertical / Mobile horizontal ── */}
       <div className="relative z-[1] w-full flex flex-col p-6 md:p-6 max-md:flex-row max-md:items-center max-md:gap-3 max-md:p-4">
-        {/* Icon row */}
         <div className="flex items-start justify-between mb-4 max-md:mb-0 max-md:shrink-0">
           <div
             className="relative flex items-center justify-center rounded-2xl max-md:rounded-xl"
@@ -292,13 +352,11 @@ function TileCard({ tile, onClick, c, isLight, idx }) {
             }}
           >
             {ICONS[tile.key] || "📦"}
-            {/* Soft glow ring behind icon */}
             <div
               className="absolute -inset-1 rounded-2xl max-md:rounded-xl"
               style={{ background: c.iconGlow }}
             />
           </div>
-          {/* Green pulse — desktop only */}
           <div
             className="hidden md:block w-2 h-2 rounded-full"
             style={{
@@ -308,8 +366,6 @@ function TileCard({ tile, onClick, c, isLight, idx }) {
             }}
           />
         </div>
-
-        {/* Text */}
         <div className="flex-1 min-w-0">
           <div
             className="text-[10.5px] font-bold uppercase tracking-[0.8px] mb-1.5 max-md:mb-0.5"
@@ -324,8 +380,6 @@ function TileCard({ tile, onClick, c, isLight, idx }) {
             {tile.title}
           </div>
         </div>
-
-        {/* Desktop footer */}
         <div className="hidden md:flex items-center justify-between mt-5">
           <span
             className="text-[12px] font-semibold flex items-center gap-1.5"
@@ -348,8 +402,6 @@ function TileCard({ tile, onClick, c, isLight, idx }) {
             </span>
           )}
         </div>
-
-        {/* Mobile arrow */}
         <div
           className="md:hidden shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-200"
           style={{ background: c.glass, color: c.t3, fontSize: 16 }}
@@ -510,7 +562,8 @@ export default function DashboardShell({ session }) {
     const t = [];
     if (can("recent")) t.push({ key: "recent", title: "Recent", sub: "Today DB", C: RecentCustomer });
     if (can("add")) t.push({ key: "add", title: "Add Customer", sub: "Manual → Recent", C: AddCustomer });
-    if (can("calander")) t.push({ key: "calander", title: "Calander", sub: "Containers", C: Calander });
+    // ─── Calander is now a special tile (no C / no modal) ───
+    if (can("calander")) t.push({ key: "calander", title: "Calander", sub: "Containers", special: true });
     if (can("pending")) t.push({ key: "pending", title: "Pending", sub: "Paused", C: Pending });
     if (can("sitting")) t.push({ key: "sitting", title: "Sitting", sub: "ACTIVE", C: SittingData });
     if (can("trash")) t.push({ key: "trash", title: "Trash", sub: "Rejected Cards", C: Trash });
@@ -522,10 +575,30 @@ export default function DashboardShell({ session }) {
     return t;
   }, [isAdmin, can]);
 
+  // ─── For mobile nav, map "meeting" key to calander tile ───
+  const mobileNavTiles = useMemo(() => {
+    return tiles.map((t) => {
+      if (t.key === "calander") return { ...t, key: "meeting", title: "Meeting" };
+      return t;
+    });
+  }, [tiles]);
+
   const [openKey, setOpenKey] = useState(null);
-  const active = tiles.find((t) => t.key === openKey);
+  const active = tiles.find((t) => t.key === openKey && !t.special);
   const ActiveComp = active?.C;
   const greeting = useMemo(() => getGreeting(), []);
+
+  // ─── Mobile nav handler: "meeting" opens meeting calander modal directly ───
+  function handleMobileNavOpen(key) {
+    if (key === "meeting") {
+      // On mobile nav tap "Meeting", we don't open LayerModal
+      // Instead the MeetingCalander button inside CalanderTile handles it
+      // So we just scroll to the calander tile or do nothing special
+      // But for better UX, let's not set openKey for special tiles
+      return;
+    }
+    setOpenKey(key);
+  }
 
   return (
     <div className="min-h-screen relative" style={{ background: c.page, color: c.t1 }}>
@@ -676,9 +749,26 @@ export default function DashboardShell({ session }) {
 
         {/* Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-md:gap-3">
-          {tiles.map((t, i) => (
-            <TileCard key={t.key} tile={t} idx={i} c={c} isLight={isLight} onClick={() => setOpenKey(t.key)} />
-          ))}
+          {tiles.map((t, i) =>
+            t.special ? (
+              <CalanderTile
+                key={t.key}
+                c={c}
+                isLight={isLight}
+                role={session.role}
+                idx={i}
+              />
+            ) : (
+              <TileCard
+                key={t.key}
+                tile={t}
+                idx={i}
+                c={c}
+                isLight={isLight}
+                onClick={() => setOpenKey(t.key)}
+              />
+            )
+          )}
         </div>
       </main>
 
@@ -688,9 +778,9 @@ export default function DashboardShell({ session }) {
       </footer>
 
       {/* Mobile Nav */}
-      <MobileNav tiles={tiles} onOpen={(k) => setOpenKey(k)} c={c} />
+      <MobileNav tiles={mobileNavTiles} onOpen={handleMobileNavOpen} c={c} />
 
-      {/* LayerModal */}
+      {/* LayerModal — only for non-special tiles */}
       <LayerModal
         open={!!active}
         zIndex={55}
@@ -705,7 +795,7 @@ export default function DashboardShell({ session }) {
         {ActiveComp ? <ActiveComp role={session.role} session={session} /> : null}
       </LayerModal>
 
-      {/* ═══ KEYFRAMES — GPU Only (transform + opacity) ═══ */}
+      {/* ═══ KEYFRAMES ═══ */}
       <style jsx global>{`
         @keyframes orb1 {
           0%,100%{transform:translate3d(0,0,0) scale(1)}

@@ -23,6 +23,11 @@ function ymdLocal(d) {
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
+function isUnlockedNow(container, now) {
+  if (!container?.unlockExpiresAt) return false;
+  const t = new Date(container.unlockExpiresAt).getTime();
+  return Number.isFinite(t) && t > now.getTime();
+}
 async function countReservedForContainer(db, dikshaContainerId) {
   return db.collection("calendarAssignments").countDocuments({
     occupiedContainerId: dikshaContainerId,
@@ -37,7 +42,8 @@ export async function POST(req, { params }) {
 
   const { containerId } = await params;
   const body = await req.json().catch(() => ({}));
-  const { customerIds, note, commitMessage, occupyDate } = body || {};
+  const { customerIds, note, commitMessage, occupyDate, bypass } = body || {};
+  const bypassFlag = bypass === true;
 
   if (!commitMessage) return NextResponse.json({ error: "Commit required" }, { status: 400 });
   if (!Array.isArray(customerIds) || customerIds.length < 2) {
@@ -52,15 +58,21 @@ export async function POST(req, { params }) {
   const db = await getDb();
   const ctnId = new ObjectId(containerId);
   const ids = cleaned.map((x) => new ObjectId(x));
-
   const actorLabel = `${session.role}:${session.username}`;
   const now = new Date();
 
   const container = await db.collection("calendarContainers").findOne({ _id: ctnId });
   if (!container) return NextResponse.json({ error: "Container not found" }, { status: 404 });
 
-  // MEETING always requires occupyDate
-  if (container.mode === "MEETING" && occupyDate == null) {
+  if (bypassFlag && container.mode !== "MEETING") {
+    return NextResponse.json({ error: "BYPASS_ONLY_FOR_MEETING" }, { status: 400 });
+  }
+  if (bypassFlag && occupyDate != null) {
+    return NextResponse.json({ error: "BYPASS_CANNOT_HAVE_OCCUPY_DATE" }, { status: 400 });
+  }
+
+  // ✅ UPDATED: MEETING requires occupyDate ONLY if NOT bypass
+  if (container.mode === "MEETING" && occupyDate == null && !bypassFlag) {
     return NextResponse.json({ error: "OCCUPY_REQUIRED" }, { status: 400 });
   }
 
@@ -88,6 +100,10 @@ export async function POST(req, { params }) {
   let occupiedDate = null;
   let meetingDecision = null;
 
+  if (container.mode === "MEETING" && bypassFlag) {
+    meetingDecision = "BYPASS";
+  }
+
   if (occupyDate != null) {
     if (container.mode !== "MEETING") {
       return NextResponse.json({ error: "occupyDate only allowed for MEETING containers" }, { status: 400 });
@@ -97,7 +113,6 @@ export async function POST(req, { params }) {
     const todayKey = ymdLocal(new Date());
     if (occupyDate < todayKey) return NextResponse.json({ error: "occupyDate must be today or future date" }, { status: 400 });
 
-    // ✅ UPDATED RULE: occupyDate must be >= meeting container date (SAME allowed)
     if (container.date && occupyDate < container.date) {
       return NextResponse.json(
         { error: "OCCUPY_MUST_BE_AFTER_MEETING", message: `Occupy date (${occupyDate}) must be same or after meeting date (${container.date})` },
@@ -185,6 +200,8 @@ export async function POST(req, { params }) {
       pairId,
       roleInPair: roleLabel(i),
 
+      bypass: bypassFlag,
+
       occupiedMode,
       occupiedDate,
       occupiedContainerId,
@@ -219,10 +236,15 @@ export async function POST(req, { params }) {
     groupSize: ids.length,
     customerIds: ids.map(String),
 
+    bypass: bypassFlag,
+
     occupiedDate,
     occupiedMode,
     occupiedContainerId: occupiedContainerId ? String(occupiedContainerId) : null,
     meetingDecision,
+
+    unlockExpiresAt: container.unlockExpiresAt ? String(container.unlockExpiresAt) : null,
+    unlockedNow: isUnlockedNow(container, now),
   };
 
   const action = kind === "FAMILY" ? "ASSIGN_FAMILY" : "ASSIGN_COUPLE";

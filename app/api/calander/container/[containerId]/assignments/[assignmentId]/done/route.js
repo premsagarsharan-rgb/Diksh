@@ -6,6 +6,20 @@ import { addCommit } from "@/lib/commits";
 
 export const runtime = "nodejs";
 
+function isUnlockedNow(container, now) {
+  if (!container?.unlockExpiresAt) return false;
+  const t = new Date(container.unlockExpiresAt).getTime();
+  return Number.isFinite(t) && t > now.getTime();
+}
+
+async function countReservedForContainer(db, dikshaContainerId) {
+  return db.collection("calendarAssignments").countDocuments({
+    occupiedContainerId: dikshaContainerId,
+    meetingDecision: "PENDING",
+    status: "IN_CONTAINER",
+  });
+}
+
 export async function POST(req, { params }) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -27,6 +41,22 @@ export async function POST(req, { params }) {
   // Done only meaningful in DIKSHA container
   if (container.mode !== "DIKSHA") {
     return NextResponse.json({ error: "DONE_ONLY_FOR_DIKSHA" }, { status: 400 });
+  }
+
+  // ✅ SERVER-SIDE LOCK ENFORCE (DIKSHA uses reserved+in)
+  const inCount = await db.collection("calendarAssignments").countDocuments({
+    containerId: ctnId,
+    status: "IN_CONTAINER",
+  });
+  const reservedCount = await countReservedForContainer(db, ctnId);
+  const used = inCount + reservedCount;
+  const limit = container.limit || 20;
+
+  if (used >= limit && !isUnlockedNow(container, now)) {
+    return NextResponse.json(
+      { error: "CONTAINER_LOCKED", message: `Container is locked at ${used}/${limit}. Admin must unlock to mark Done.` },
+      { status: 423 }
+    );
   }
 
   const base = await db.collection("calendarAssignments").findOne({

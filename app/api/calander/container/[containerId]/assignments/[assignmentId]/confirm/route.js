@@ -25,6 +25,12 @@ function normalizeWhatsAppTo(raw) {
   return `whatsapp:+${digits}`;
 }
 
+function isUnlockedNow(container, now) {
+  if (!container?.unlockExpiresAt) return false;
+  const t = new Date(container.unlockExpiresAt).getTime();
+  return Number.isFinite(t) && t > now.getTime();
+}
+
 export async function POST(req, { params }) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -44,6 +50,20 @@ export async function POST(req, { params }) {
   if (!container) return NextResponse.json({ error: "Container not found" }, { status: 404 });
   if (container.mode !== "MEETING") return NextResponse.json({ error: "Confirm only valid for MEETING" }, { status: 400 });
 
+  // ✅ SERVER-SIDE LOCK ENFORCE (Meeting container full => locked unless unlocked)
+  const inCount = await db.collection("calendarAssignments").countDocuments({
+    containerId: ctnId,
+    status: "IN_CONTAINER",
+  });
+  const limit = container.limit || 20;
+  const unlocked = isUnlockedNow(container, now);
+  if (inCount >= limit && !unlocked) {
+    return NextResponse.json(
+      { error: "CONTAINER_LOCKED", message: `Container is locked at ${inCount}/${limit}. Admin must unlock to perform actions.` },
+      { status: 423 }
+    );
+  }
+
   const base = await db.collection("calendarAssignments").findOne({
     _id: asgId,
     containerId: ctnId,
@@ -51,9 +71,7 @@ export async function POST(req, { params }) {
   });
   if (!base) return NextResponse.json({ error: "Assignment not found" }, { status: 404 });
 
-  if (!base.occupiedContainerId || !base.occupiedDate || base.meetingDecision !== "PENDING") {
-    return NextResponse.json({ error: "This card is not occupied / not pending" }, { status: 409 });
-  }
+  const bypassFlag = base?.bypass === true || base?.meetingDecision === "BYPASS";
 
   const isGroup = (base.kind === "COUPLE" || base.kind === "FAMILY") && base.pairId;
   const group = isGroup
@@ -64,20 +82,31 @@ export async function POST(req, { params }) {
       }).toArray()
     : [base];
 
-  const targetId = new ObjectId(base.occupiedContainerId);
   const ids = group.map((x) => x._id);
   const custIds = group.map((x) => x.customerId);
 
-  // ✅ LOCK to prevent double confirm / duplicate WhatsApp
+  // ✅ LOCK to prevent double confirm / duplicate processing
+  const expectedDecision = bypassFlag ? "BYPASS" : "PENDING";
   const lockRes = await db.collection("calendarAssignments").updateMany(
-    { _id: { $in: ids }, containerId: ctnId, status: "IN_CONTAINER", meetingDecision: "PENDING" },
+    { _id: { $in: ids }, containerId: ctnId, status: "IN_CONTAINER", meetingDecision: expectedDecision },
     { $set: { meetingDecision: "PROCESSING", processingAt: now, processingByUserId: session.userId, updatedAt: now } }
   );
-  if (lockRes.modifiedCount !== ids.length) {
-    return NextResponse.json({ error: "Already processing / already confirmed" }, { status: 409 });
+
+  if (lockRes.modifiedCount !== ids.length && bypassFlag) {
+    const lockRes2 = await db.collection("calendarAssignments").updateMany(
+      { _id: { $in: ids }, containerId: ctnId, status: "IN_CONTAINER", meetingDecision: { $in: [null, undefined, "BYPASS"] } },
+      { $set: { meetingDecision: "PROCESSING", processingAt: now, processingByUserId: session.userId, updatedAt: now } }
+    );
+    if (lockRes2.modifiedCount !== ids.length) {
+      return NextResponse.json({ error: "Already processing / already confirmed" }, { status: 409 });
+    }
+  } else {
+    if (lockRes.modifiedCount !== ids.length) {
+      return NextResponse.json({ error: "Already processing / already confirmed" }, { status: 409 });
+    }
   }
 
-  // load customers (need whatsappWelcomeTo)
+  // load customers
   const customers = await db.collection("sittingCustomers")
     .find({ _id: { $in: custIds } })
     .project({
@@ -97,19 +126,144 @@ export async function POST(req, { params }) {
   if (customers.length !== custIds.length) {
     await db.collection("calendarAssignments").updateMany(
       { _id: { $in: ids }, meetingDecision: "PROCESSING" },
-      { $set: { meetingDecision: "PENDING", updatedAt: new Date() }, $unset: { processingAt: "", processingByUserId: "" } }
+      { $set: { meetingDecision: bypassFlag ? "BYPASS" : "PENDING", updatedAt: new Date() }, $unset: { processingAt: "", processingByUserId: "" } }
     );
     return NextResponse.json({ error: "Customer record missing" }, { status: 404 });
   }
 
   const customerById = new Map(customers.map((c) => [String(c._id), c]));
 
-  // ✅ WhatsApp first (fail => confirm fail)
+  /* ──────────────────────────────────────────────
+     ✅ BYPASS BRANCH: Confirm → Pending (no whatsapp)
+     ────────────────────────────────────────────── */
+  if (bypassFlag) {
+    try {
+      // History snapshots
+      const historyDocs = group.map((a) => {
+        const cust = customerById.get(String(a.customerId));
+        return {
+          originalAssignmentId: a._id,
+          containerId: ctnId,
+          customerId: a.customerId,
+          status: "BYPASS_TO_PENDING",
+
+          customerSnapshot: {
+            name: cust?.name || "",
+            gender: cust?.gender || "OTHER",
+            age: cust?.age || "",
+            address: cust?.address || "",
+            rollNo: cust?.rollNo || "",
+          },
+
+          kind: a.kind || "SINGLE",
+          pairId: a.pairId || null,
+          roleInPair: a.roleInPair || null,
+
+          occupiedDate: null,
+          occupiedContainerId: null,
+          meetingDecision: "BYPASS_CONFIRMED",
+          confirmedAt: now,
+          confirmedByUserId: session.userId,
+          confirmedByLabel: actorLabel,
+
+          whatsappConfirmSid: null,
+          whatsappConfirmTo: null,
+
+          originalCreatedAt: a.createdAt,
+          createdAt: now,
+          updatedAt: now,
+        };
+      });
+
+      if (historyDocs.length > 0) {
+        await db.collection("calendarAssignmentHistory").insertMany(historyDocs);
+      }
+
+      // Move customers to pendingCustomers (ELIGIBLE)
+      const pendingBulk = custIds.map((cid) => {
+        const cust = customerById.get(String(cid)) || {};
+        return {
+          updateOne: {
+            filter: { _id: cid },
+            update: {
+              $set: {
+                ...cust,
+                _id: cid,
+                status: "ELIGIBLE",
+                dikshaEligible: true,
+                dikshaEligibleAt: now,
+                activeContainerId: null,
+
+                bypassedFromMeetingContainerId: ctnId,
+                bypassedFromMeetingDate: container.date || null,
+                bypassedAt: now,
+                bypassedByUserId: session.userId,
+                bypassedByLabel: actorLabel,
+
+                updatedAt: now,
+              },
+            },
+            upsert: true,
+          },
+        };
+      });
+
+      if (pendingBulk.length > 0) {
+        await db.collection("pendingCustomers").bulkWrite(pendingBulk, { ordered: false });
+      }
+
+      // Remove from sittingCustomers
+      await db.collection("sittingCustomers").deleteMany({ _id: { $in: custIds } });
+
+      // Remove assignments from calendarAssignments
+      await db.collection("calendarAssignments").deleteMany({ _id: { $in: ids } });
+
+      for (const cid of custIds) {
+        await addCommit({
+          customerId: cid,
+          userId: session.userId,
+          actorLabel,
+          message: commitMessage,
+          action: "MEETING_CONFIRM_BYPASS_TO_PENDING",
+          meta: {
+            fromMeetingContainerId: String(ctnId),
+            meetingDate: container.date || null,
+            kind: base.kind,
+            pairId: base.pairId ? String(base.pairId) : null,
+            bypass: true,
+            historyRecordCreated: true,
+          },
+        });
+      }
+
+      return NextResponse.json({ ok: true, bypass: true, movedToPending: custIds.length, historyCreated: historyDocs.length });
+    } catch (e) {
+      await db.collection("calendarAssignments").updateMany(
+        { _id: { $in: ids }, meetingDecision: "PROCESSING" },
+        { $set: { meetingDecision: "BYPASS", updatedAt: new Date() }, $unset: { processingAt: "", processingByUserId: "" } }
+      );
+      return NextResponse.json({ error: "BYPASS_CONFIRM_FAILED", detail: String(e?.message || e) }, { status: 500 });
+    }
+  }
+
+  /* ──────────────────────────────────────────────
+     NORMAL BRANCH: Confirm → Diksha (existing)
+     ────────────────────────────────────────────── */
+  if (!base.occupiedContainerId || !base.occupiedDate) {
+    await db.collection("calendarAssignments").updateMany(
+      { _id: { $in: ids }, meetingDecision: "PROCESSING" },
+      { $set: { meetingDecision: "PENDING", updatedAt: new Date() }, $unset: { processingAt: "", processingByUserId: "" } }
+    );
+    return NextResponse.json({ error: "This card is not occupied / not pending" }, { status: 409 });
+  }
+
+  const targetId = new ObjectId(base.occupiedContainerId);
+
+  // WhatsApp first
   const sentMap = new Map();
   try {
     for (const cid of custIds) {
       const c = customerById.get(String(cid));
-
       const fromWelcome = normalizeWhatsAppTo(c?.whatsappWelcomeTo);
       const fallback = buildWhatsAppTo(c);
       const to = fromWelcome || fallback;
@@ -136,25 +290,19 @@ export async function POST(req, { params }) {
         $unset: { processingAt: "", processingByUserId: "" },
       }
     );
-    return NextResponse.json(
-      { error: "WHATSAPP_SEND_FAILED", detail: String(e?.message || e) },
-      { status: 502 }
-    );
+    return NextResponse.json({ error: "WHATSAPP_SEND_FAILED", detail: String(e?.message || e) }, { status: 502 });
   }
 
-  // ✅ TASK 2: Create history snapshots BEFORE moving cards
-  // These will remain in the MEETING container as permanent records
+  // History snapshots
   const historyDocs = group.map((a) => {
     const cust = customerById.get(String(a.customerId));
     const meta = sentMap.get(String(a.customerId));
     return {
-      // Reference back to original assignment
       originalAssignmentId: a._id,
-      containerId: ctnId, // stays in MEETING container
+      containerId: ctnId,
       customerId: a.customerId,
-      status: "CONFIRMED_OUT", // history status — not IN_CONTAINER
+      status: "CONFIRMED_OUT",
 
-      // Snapshot of customer info at time of confirm
       customerSnapshot: {
         name: cust?.name || "",
         gender: cust?.gender || "OTHER",
@@ -163,12 +311,10 @@ export async function POST(req, { params }) {
         rollNo: cust?.rollNo || "",
       },
 
-      // Assignment details
       kind: a.kind || "SINGLE",
       pairId: a.pairId || null,
       roleInPair: a.roleInPair || null,
 
-      // Meeting → Diksha details
       occupiedDate: a.occupiedDate,
       occupiedContainerId: a.occupiedContainerId,
       meetingDecision: "CONFIRMED",
@@ -176,11 +322,9 @@ export async function POST(req, { params }) {
       confirmedByUserId: session.userId,
       confirmedByLabel: actorLabel,
 
-      // WhatsApp log
       whatsappConfirmSid: meta?.sid || null,
       whatsappConfirmTo: meta?.to || null,
 
-      // Timestamps
       originalCreatedAt: a.createdAt,
       createdAt: now,
       updatedAt: now,
@@ -191,7 +335,7 @@ export async function POST(req, { params }) {
     await db.collection("calendarAssignmentHistory").insertMany(historyDocs);
   }
 
-  // ✅ Move assignments to DIKSHA + store WA logs (EXISTING LOGIC — unchanged)
+  // Move assignments to DIKSHA
   const bulk = group.map((a) => {
     const meta = sentMap.get(String(a.customerId));
     return {
@@ -204,7 +348,6 @@ export async function POST(req, { params }) {
             meetingDecision: "CONFIRMED",
             confirmedAt: now,
             confirmedByUserId: session.userId,
-
             whatsappConfirmSentAt: now,
             whatsappConfirmSid: meta?.sid || null,
             whatsappConfirmTo: meta?.to || null,
@@ -218,7 +361,6 @@ export async function POST(req, { params }) {
 
   await db.collection("calendarAssignments").bulkWrite(bulk, { ordered: true });
 
-  // ✅ update customers active container + mark eligible
   await db.collection("sittingCustomers").updateMany(
     { _id: { $in: custIds } },
     {

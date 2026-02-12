@@ -7,6 +7,12 @@ import { addCommit } from "@/lib/commits";
 
 export const runtime = "nodejs";
 
+function isUnlockedNow(container, now) {
+  if (!container?.unlockExpiresAt) return false;
+  const t = new Date(container.unlockExpiresAt).getTime();
+  return Number.isFinite(t) && t > now.getTime();
+}
+
 export async function POST(req, { params }) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -28,6 +34,19 @@ export async function POST(req, { params }) {
   const container = await db.collection("calendarContainers").findOne({ _id: ctnId });
   if (!container) return NextResponse.json({ error: "Container not found" }, { status: 404 });
   if (container.mode !== "MEETING") return NextResponse.json({ error: "Reject only valid for MEETING" }, { status: 400 });
+
+  // ✅ SERVER-SIDE LOCK ENFORCE (MEETING)
+  const inCount = await db.collection("calendarAssignments").countDocuments({
+    containerId: ctnId,
+    status: "IN_CONTAINER",
+  });
+  const limit = container.limit || 20;
+  if (inCount >= limit && !isUnlockedNow(container, now)) {
+    return NextResponse.json(
+      { error: "CONTAINER_LOCKED", message: `Container is locked at ${inCount}/${limit}. Admin must unlock to reject.` },
+      { status: 423 }
+    );
+  }
 
   const base = await db.collection("calendarAssignments").findOne({
     _id: asgId,

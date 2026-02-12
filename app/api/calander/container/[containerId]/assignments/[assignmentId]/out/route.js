@@ -6,24 +6,67 @@ import { addCommit } from "@/lib/commits";
 
 export const runtime = "nodejs";
 
+function isUnlockedNow(container, now) {
+  if (!container?.unlockExpiresAt) return false;
+  const t = new Date(container.unlockExpiresAt).getTime();
+  return Number.isFinite(t) && t > now.getTime();
+}
+
+async function countReservedForContainer(db, dikshaContainerId) {
+  return db.collection("calendarAssignments").countDocuments({
+    occupiedContainerId: dikshaContainerId,
+    meetingDecision: "PENDING",
+    status: "IN_CONTAINER",
+  });
+}
+
 export async function POST(req, { params }) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { assignmentId } = await params;
+  const { containerId, assignmentId } = await params;
   const body = await req.json().catch(() => ({}));
   const commitMessage = body?.commitMessage;
 
   if (!commitMessage) return NextResponse.json({ error: "Commit required" }, { status: 400 });
 
   const db = await getDb();
+  const ctnIdFromUrl = containerId ? new ObjectId(containerId) : null;
   const aId = new ObjectId(assignmentId);
+  const now = new Date();
+  const actorLabel = `${session.role}:${session.username}`;
 
   const assignment = await db.collection("calendarAssignments").findOne({ _id: aId });
   if (!assignment) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const now = new Date();
-  const actorLabel = `${session.role}:${session.username}`;
+  // Strong consistency: if containerId is passed, enforce match
+  if (ctnIdFromUrl && String(assignment.containerId) !== String(ctnIdFromUrl)) {
+    return NextResponse.json({ error: "CONTAINER_MISMATCH" }, { status: 400 });
+  }
+
+  const container = await db.collection("calendarContainers").findOne({ _id: assignment.containerId });
+  if (!container) return NextResponse.json({ error: "Container not found" }, { status: 404 });
+
+  // ✅ SERVER-SIDE LOCK ENFORCE (MEETING & DIKSHA)
+  const inCount = await db.collection("calendarAssignments").countDocuments({
+    containerId: assignment.containerId,
+    status: "IN_CONTAINER",
+  });
+
+  let used = inCount;
+  const limit = container.limit || 20;
+
+  if (container.mode === "DIKSHA") {
+    const reservedCount = await countReservedForContainer(db, assignment.containerId);
+    used = inCount + reservedCount;
+  }
+
+  if (used >= limit && !isUnlockedNow(container, now)) {
+    return NextResponse.json(
+      { error: "CONTAINER_LOCKED", message: `Container is locked at ${used}/${limit}. Admin must unlock to OUT.` },
+      { status: 423 }
+    );
+  }
 
   // ✅ LOCK: If card already QUALIFIED (Done), block OUT
   if (assignment.cardStatus === "QUALIFIED") {
@@ -78,7 +121,6 @@ export async function POST(req, { params }) {
   }
 
   // SINGLE
-  // ✅ extra safety: block if assignment became qualified between reads
   const fresh = await db.collection("calendarAssignments").findOne({ _id: aId });
   if (fresh?.cardStatus === "QUALIFIED") {
     return NextResponse.json({ error: "LOCKED_QUALIFIED" }, { status: 409 });
@@ -100,6 +142,7 @@ export async function POST(req, { params }) {
     actorLabel,
     message: commitMessage,
     action: "OUT_SINGLE",
+    meta: { containerId: String(assignment.containerId), mode: container.mode },
   });
 
   return NextResponse.json({ ok: true, kind: "SINGLE" });

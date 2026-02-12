@@ -16,6 +16,12 @@ function ymdLocal(d) {
   return `${y}-${m}-${day}`;
 }
 
+function isUnlockedNow(container, now) {
+  if (!container?.unlockExpiresAt) return false;
+  const t = new Date(container.unlockExpiresAt).getTime();
+  return Number.isFinite(t) && t > now.getTime();
+}
+
 async function countReservedForContainer(db, dikshaContainerId) {
   return db.collection("calendarAssignments").countDocuments({
     occupiedContainerId: dikshaContainerId,
@@ -30,7 +36,9 @@ export async function POST(req, { params }) {
 
   const { containerId } = await params;
   const body = await req.json().catch(() => ({}));
-  const { customerId, source, note, commitMessage, occupyDate } = body || {};
+  const { customerId, source, note, commitMessage, occupyDate, bypass } = body || {};
+
+  const bypassFlag = bypass === true;
 
   if (!customerId || !source) return NextResponse.json({ error: "Missing customerId/source" }, { status: 400 });
   if (!["TODAY", "PENDING", "SITTING"].includes(source)) {
@@ -47,8 +55,18 @@ export async function POST(req, { params }) {
   const container = await db.collection("calendarContainers").findOne({ _id: ctnId });
   if (!container) return NextResponse.json({ error: "Container not found" }, { status: 404 });
 
-  // MEETING always requires occupyDate
-  if (container.mode === "MEETING" && occupyDate == null) {
+  // BYPASS only for MEETING
+  if (bypassFlag && container.mode !== "MEETING") {
+    return NextResponse.json({ error: "BYPASS_ONLY_FOR_MEETING" }, { status: 400 });
+  }
+
+  // prevent ambiguous input
+  if (bypassFlag && occupyDate != null) {
+    return NextResponse.json({ error: "BYPASS_CANNOT_HAVE_OCCUPY_DATE" }, { status: 400 });
+  }
+
+  // ✅ UPDATED: MEETING requires occupyDate ONLY if NOT bypass
+  if (container.mode === "MEETING" && occupyDate == null && !bypassFlag) {
     return NextResponse.json({ error: "OCCUPY_REQUIRED" }, { status: 400 });
   }
 
@@ -77,6 +95,10 @@ export async function POST(req, { params }) {
   let occupiedDate = null;
   let meetingDecision = null;
 
+  if (container.mode === "MEETING" && bypassFlag) {
+    meetingDecision = "BYPASS";
+  }
+
   if (occupyDate != null) {
     if (container.mode !== "MEETING") {
       return NextResponse.json({ error: "occupyDate only allowed for MEETING containers" }, { status: 400 });
@@ -88,7 +110,7 @@ export async function POST(req, { params }) {
       return NextResponse.json({ error: "occupyDate must be today or future date" }, { status: 400 });
     }
 
-    // ✅ UPDATED RULE: occupyDate must be >= meeting container date (SAME allowed)
+    // ✅ occupyDate must be >= meeting container date (SAME allowed)
     if (container.date && occupyDate < container.date) {
       return NextResponse.json(
         { error: "OCCUPY_MUST_BE_AFTER_MEETING", message: `Occupy date (${occupyDate}) must be same or after meeting date (${container.date})` },
@@ -203,6 +225,8 @@ export async function POST(req, { params }) {
       pairId: null,
       roleInPair: null,
 
+      bypass: bypassFlag,
+
       occupiedMode,
       occupiedDate,
       occupiedContainerId,
@@ -234,10 +258,13 @@ export async function POST(req, { params }) {
       containerId: String(ctnId),
       date: container.date,
       mode: container.mode,
+      bypass: bypassFlag,
       occupiedDate,
       occupiedMode,
       occupiedContainerId: occupiedContainerId ? String(occupiedContainerId) : null,
       meetingDecision,
+      unlockExpiresAt: container.unlockExpiresAt ? String(container.unlockExpiresAt) : null,
+      unlockedNow: isUnlockedNow(container, now),
     },
   });
 
