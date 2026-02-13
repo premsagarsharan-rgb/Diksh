@@ -23,7 +23,7 @@ export function Field({ label, value, onChange, required, placeholder, type = "t
         {required && <span style={{ color: c.requiredStar }}>*</span>}
       </div>
       <input
-        value={value}
+        value={value || ""}
         type={type}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
@@ -59,7 +59,7 @@ export function Select({ label, value, onChange, options, required, c, disabled,
         {required && <span style={{ color: c.requiredStar }}>*</span>}
       </div>
       <select
-        value={value}
+        value={value || ""}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
         className="w-full rounded-2xl border px-4 py-3 text-[13px] outline-none transition-all duration-200 appearance-none"
@@ -69,9 +69,15 @@ export function Select({ label, value, onChange, options, required, c, disabled,
           color: disabled ? c.inputDisabledText : c.inputText,
         }}
         onFocusCapture={(e) => {
-          if (!disabled) e.currentTarget.style.boxShadow = `0 0 0 3px ${c.inputFocusRing}`;
+          if (!disabled) {
+            e.currentTarget.style.boxShadow = `0 0 0 3px ${c.inputFocusRing}`;
+            e.currentTarget.style.borderColor = c.inputBorderFocus;
+          }
         }}
-        onBlurCapture={(e) => { e.currentTarget.style.boxShadow = "none"; }}
+        onBlurCapture={(e) => {
+          e.currentTarget.style.boxShadow = "none";
+          e.currentTarget.style.borderColor = error ? c.errorInline : c.inputBorder;
+        }}
       >
         {children || (
           <>
@@ -90,7 +96,7 @@ export function Toggle({ label, val, setVal, c }) {
     <button
       type="button"
       onClick={() => setVal(!val)}
-      className="rounded-2xl border px-3.5 py-2.5 text-left transition-all duration-200 w-full"
+      className="rounded-2xl border px-3.5 py-2.5 text-left transition-all duration-200 w-full active:scale-[0.97]"
       style={{
         background: val ? c.toggleOn : c.toggleOff,
         borderColor: val ? c.toggleOnBorder : c.toggleOffBorder,
@@ -107,7 +113,10 @@ export function Toggle({ label, val, setVal, c }) {
         </div>
         <div
           className="w-5 h-5 rounded-full flex items-center justify-center transition-all duration-200"
-          style={{ background: val ? c.toggleDot : c.toggleDotOff }}
+          style={{
+            background: val ? c.toggleDot : c.toggleDotOff,
+            transform: val ? "scale(1.1)" : "scale(1)",
+          }}
         >
           {val && (
             <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
@@ -123,8 +132,10 @@ export function Toggle({ label, val, setVal, c }) {
 export function ReviewLine({ k, v, c, alt }) {
   return (
     <div
-      className="flex items-start justify-between gap-3 px-4 py-2.5 rounded-xl"
+      className="flex items-start justify-between gap-3 px-4 py-2.5 rounded-xl transition-colors duration-100"
       style={{ background: alt ? c.reviewRowAlt : "transparent" }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = c.panelHover || c.reviewRowAlt; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = alt ? c.reviewRowAlt : "transparent"; }}
     >
       <div className="text-[12px] font-medium" style={{ color: c.reviewKey }}>{k}</div>
       <div className="text-[12px] font-semibold text-right break-words max-w-[60%]" style={{ color: c.reviewVal }}>
@@ -139,7 +150,13 @@ export function ErrorBanner({ message, c }) {
   return (
     <div
       className="mb-4 rounded-2xl border px-4 py-3 text-[13px] font-medium flex items-center gap-2"
-      style={{ background: c.errorBg, borderColor: c.errorBorder, color: c.errorText }}
+      style={{
+        background: c.errorBg,
+        borderColor: c.errorBorder,
+        color: c.errorText,
+        opacity: 0,
+        animation: "profileFadeUp 0.3s ease-out forwards",
+      }}
     >
       <span>⚠️</span> {message}
     </div>
@@ -170,7 +187,7 @@ export function TabBar({ tabs, active, onChange, c }) {
           key={tab.key}
           type="button"
           onClick={() => onChange(tab.key)}
-          className="flex-1 px-4 py-2.5 text-[12px] font-bold transition-all duration-200 flex items-center justify-center gap-1.5"
+          className="flex-1 px-4 py-2.5 text-[12px] font-bold transition-all duration-200 flex items-center justify-center gap-1.5 active:scale-[0.97]"
           style={{
             background: active === tab.key ? c.tabActiveBg : c.tabInactiveBg,
             color: active === tab.key ? c.tabActiveText : c.tabInactiveText,

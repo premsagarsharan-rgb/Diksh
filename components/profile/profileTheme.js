@@ -59,6 +59,25 @@ export const PT = {
     genderFemale: "linear-gradient(135deg, #831843, #9d174d, #be185d)",
     genderOther: "linear-gradient(135deg, #064e3b, #065f46, #047857)",
 
+    // Header UIX tokens
+    headerGlow: "rgba(99,102,241,0.15)",
+    headerOverlay: "radial-gradient(ellipse at 70% 20%, rgba(255,255,255,0.10), transparent 60%)",
+    headerAvatarBg: "rgba(0,0,0,0.40)",
+    headerAvatarRing: "rgba(255,255,255,0.15)",
+    headerAvatarText: "#ffffff",
+    headerNameColor: "#ffffff",
+    headerMetaColor: "rgba(255,255,255,0.70)",
+    headerMetaDim: "rgba(255,255,255,0.50)",
+    headerRollBg: "rgba(255,255,255,0.12)",
+    headerRollText: "#ffffff",
+    headerChipBarBg: "rgba(0,0,0,0.20)",
+    headerChipBarBorder: "rgba(255,255,255,0.06)",
+    headerSourceBg: "rgba(255,255,255,0.08)",
+    headerSourceBorder: "rgba(255,255,255,0.12)",
+    headerSourceText: "rgba(255,255,255,0.80)",
+    headerEligibleGlow: "rgba(6,182,212,0.30)",
+    headerQualifiedGlow: "rgba(168,85,247,0.30)",
+
     // Status colors
     statusActive: { bg: "rgba(34,197,94,0.12)", border: "rgba(34,197,94,0.25)", text: "#4ade80", dot: "#22c55e" },
     statusPending: { bg: "rgba(251,191,36,0.12)", border: "rgba(251,191,36,0.25)", text: "#fbbf24", dot: "#f59e0b" },
@@ -106,7 +125,7 @@ export const PT = {
     doneBg: "rgba(255,255,255,0.03)",
     doneAccent: "#818cf8",
 
-    // Hall card
+    // Hall card (kept for backward compat, unused now)
     hallBg: "rgba(255,255,255,0.03)",
     hallBorder: "rgba(255,255,255,0.08)",
     hallAccent: "#818cf8",
@@ -132,7 +151,7 @@ export const PT = {
     dropItemText: "rgba(255,255,255,0.85)",
     dropItemHover: "rgba(255,255,255,0.06)",
 
-    // Calendar picker (kept same dark style)
+    // Calendar picker (kept for backward compat — now unused in profile)
     calBg: "rgba(0,0,0,0.30)",
     calBorder: "rgba(255,255,255,0.10)",
     calDayText: "#ffffff",
@@ -159,6 +178,23 @@ export const PT = {
     calModeBtnActive: "bg-white text-black font-semibold",
     calModeBtnInactive: "text-white/70 hover:bg-white/10",
     calNavBtn: "bg-white/10 hover:bg-white/15 border border-white/10",
+
+    // Smart Input tokens (SecondForm)
+    smartInputValid: "rgba(34,197,94,0.15)",
+    smartInputValidBorder: "rgba(34,197,94,0.30)",
+    smartInputValidIcon: "#4ade80",
+    smartInputError: "rgba(239,68,68,0.10)",
+    smartInputErrorBorder: "rgba(239,68,68,0.25)",
+    smartInputErrorIcon: "#f87171",
+    smartInputHintBg: "rgba(99,102,241,0.08)",
+    smartInputHintBorder: "rgba(99,102,241,0.15)",
+    smartInputHintText: "rgba(165,180,252,0.90)",
+    smartDropdownBg: "rgba(10,10,25,0.96)",
+    smartDropdownBorder: "rgba(255,255,255,0.10)",
+    smartDropdownItemHover: "rgba(99,102,241,0.12)",
+    smartDropdownItemActive: "rgba(99,102,241,0.20)",
+    smartDropdownItemText: "rgba(255,255,255,0.85)",
+    smartDropdownCheck: "#818cf8",
   },
 
   light: {
@@ -210,6 +246,25 @@ export const PT = {
     genderMale: "linear-gradient(135deg, #dbeafe, #bfdbfe, #93c5fd)",
     genderFemale: "linear-gradient(135deg, #fce7f3, #fbcfe8, #f9a8d4)",
     genderOther: "linear-gradient(135deg, #d1fae5, #a7f3d0, #6ee7b7)",
+
+    // Header UIX tokens
+    headerGlow: "rgba(161,98,7,0.10)",
+    headerOverlay: "radial-gradient(ellipse at 70% 20%, rgba(255,255,255,0.30), transparent 60%)",
+    headerAvatarBg: "rgba(255,255,255,0.90)",
+    headerAvatarRing: "rgba(0,0,0,0.08)",
+    headerAvatarText: "#0f172a",
+    headerNameColor: "#0f172a",
+    headerMetaColor: "rgba(15,23,42,0.60)",
+    headerMetaDim: "rgba(15,23,42,0.45)",
+    headerRollBg: "rgba(0,0,0,0.08)",
+    headerRollText: "#0f172a",
+    headerChipBarBg: "rgba(255,255,255,0.60)",
+    headerChipBarBorder: "rgba(0,0,0,0.06)",
+    headerSourceBg: "rgba(0,0,0,0.04)",
+    headerSourceBorder: "rgba(0,0,0,0.08)",
+    headerSourceText: "rgba(15,23,42,0.70)",
+    headerEligibleGlow: "rgba(8,145,178,0.15)",
+    headerQualifiedGlow: "rgba(126,34,206,0.15)",
 
     statusActive: { bg: "rgba(22,163,74,0.08)", border: "rgba(22,163,74,0.18)", text: "#15803d", dot: "#16a34a" },
     statusPending: { bg: "rgba(202,138,4,0.08)", border: "rgba(202,138,4,0.18)", text: "#a16207", dot: "#ca8a04" },
@@ -300,6 +355,23 @@ export const PT = {
     calModeBtnActive: "bg-slate-900 text-white font-semibold",
     calModeBtnInactive: "text-slate-500 hover:bg-black/5",
     calNavBtn: "bg-black/5 hover:bg-black/8 border border-black/8",
+
+    // Smart Input tokens (SecondForm)
+    smartInputValid: "rgba(22,163,74,0.08)",
+    smartInputValidBorder: "rgba(22,163,74,0.20)",
+    smartInputValidIcon: "#15803d",
+    smartInputError: "rgba(220,38,38,0.06)",
+    smartInputErrorBorder: "rgba(220,38,38,0.18)",
+    smartInputErrorIcon: "#dc2626",
+    smartInputHintBg: "rgba(161,98,7,0.06)",
+    smartInputHintBorder: "rgba(161,98,7,0.12)",
+    smartInputHintText: "rgba(161,98,7,0.80)",
+    smartDropdownBg: "rgba(255,255,255,0.98)",
+    smartDropdownBorder: "rgba(0,0,0,0.08)",
+    smartDropdownItemHover: "rgba(161,98,7,0.06)",
+    smartDropdownItemActive: "rgba(161,98,7,0.12)",
+    smartDropdownItemText: "rgba(15,23,42,0.80)",
+    smartDropdownCheck: "#a16207",
   },
 };
 

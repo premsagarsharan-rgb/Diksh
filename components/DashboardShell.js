@@ -561,7 +561,7 @@ export default function DashboardShell({ session }) {
   const tiles = useMemo(() => {
     const t = [];
     if (can("recent")) t.push({ key: "recent", title: "Recent", sub: "Today DB", C: RecentCustomer });
-    if (can("add")) t.push({ key: "add", title: "Add Customer", sub: "Manual → Recent", C: AddCustomer });
+    if (can("add")) t.push({ key: "add", title: "Add Aspirant", sub: "Manual → Recent", C: AddCustomer });
     // ─── Calander is now a special tile (no C / no modal) ───
     if (can("calander")) t.push({ key: "calander", title: "Calander", sub: "Containers", special: true });
     if (can("pending")) t.push({ key: "pending", title: "Pending", sub: "Paused", C: Pending });
@@ -617,7 +617,7 @@ export default function DashboardShell({ session }) {
         <div className="max-w-[1320px] mx-auto px-7 h-[66px] flex items-center justify-between gap-4">
           <div className="flex flex-col">
             <span className="text-[9.5px] uppercase tracking-[2.5px] font-bold" style={{ color: c.t3 }}>
-              Premium Dashboard
+              SHREE HARIVANSH
             </span>
             <span
               className="text-[19px] font-black tracking-tight"
@@ -633,7 +633,7 @@ export default function DashboardShell({ session }) {
                     }
               }
             >
-              ⚡ Sysbyte WebApp
+              ⚡ DIKSHA RKK
             </span>
           </div>
 
@@ -742,7 +742,7 @@ export default function DashboardShell({ session }) {
               className="text-[10px] px-3 py-1 rounded-full text-white font-bold uppercase tracking-[0.5px]"
               style={{ background: c.accGBtn }}
             >
-              {tiles.length} modules
+              DIKSHA
             </span>
           </div>
         </div>
@@ -774,7 +774,7 @@ export default function DashboardShell({ session }) {
 
       {/* Footer */}
       <footer className="hidden md:block relative z-[1] text-center py-8 text-[11px]" style={{ color: c.t3 }}>
-        ⚡ Sysbyte WebApp · Premium Dashboard
+        ⚡ DIKSHA RKK · Seva Sabse Pehle🙏
       </footer>
 
       {/* Mobile Nav */}

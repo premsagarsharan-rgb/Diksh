@@ -14,15 +14,24 @@ const DRAFT_KEY_V2 = "sysbyte_addcustomer_draft_v2";
 const DRAFT_KEY_V1 = "sysbyte_addcustomer_draft_v1";
 const LAST_ADDED_KEY = "sysbyte_last_added_customer";
 
-const FAMILY_OPTIONS = ["mother", "father", "mother&father", "husband", "husbend", "wife", "other"];
+const FAMILY_OPTIONS = ["mother", "father", "mother&father", "husband", "wife", "other"];
 
 const APPROVERS = [
-  "Albeli baba", "sundari baba", "sahachari baba", "pyari sharan babab",
+  "Albeli baba", "sundari baba", "sahachari baba", "pyari sharan baba",
   "garbeli baba", "mahaMadhuri baba", "navalNagri baba",
   "permRasdaini baba", "navalKishori baba",
 ];
 
-const MARITAL = ["marrid", "unmarrid", "divorce", "wido", "virakt", "sepreted"];
+const MARITAL = ["married", "unmarried", "divorce", "widow", "virakt", "separated"];
+
+const CURRENT_YEAR = new Date().getFullYear();
+const MIN_YEAR = 1950;
+
+const PET_SUGGESTIONS = [
+  "Dog", "Cat", "Parrot", "Cow", "Buffalo", "Goat", "Fish",
+  "Rabbit", "Hamster", "Turtle", "Horse", "Pigeon", "Hen",
+  "Duck", "Peacock", "Monkey", "Snake", "Lizard", "Other",
+];
 
 const OCCUPATION_SUGGESTIONS = [
   "Business", "Private Job", "Government Job", "House Wife", "ShopKeeper",
@@ -63,7 +72,7 @@ const COUNTRIES_FALLBACK = [
 ].map((n) => ({ name: n, flag: "", code: n }));
 
 /* ═══════════════════════════════════════════════
-   THEME COLORS
+   THEME COLORS — BANKING FORMAL
    ═══════════════════════════════════════════════ */
 
 const AC = {
@@ -71,32 +80,22 @@ const AC = {
     page: "#06060f",
     cardBg: "rgba(255,255,255,0.04)",
     cardBorder: "rgba(255,255,255,0.06)",
-    cardHoverBg: "rgba(255,255,255,0.07)",
     inputBg: "rgba(255,255,255,0.05)",
-    inputBorder: "rgba(255,255,255,0.08)",
-    inputBorderFocus: "rgba(99,102,241,0.50)",
+    inputBorder: "rgba(255,255,255,0.10)",
+    inputBorderFocus: "rgba(99,102,241,0.60)",
     inputText: "#ffffff",
-    inputPlaceholder: "rgba(255,255,255,0.30)",
-    inputFocusRing: "rgba(99,102,241,0.25)",
+    inputPlaceholder: "rgba(255,255,255,0.28)",
+    inputFocusRing: "rgba(99,102,241,0.18)",
     inputDisabledBg: "rgba(255,255,255,0.02)",
-    inputDisabledText: "rgba(255,255,255,0.30)",
+    inputDisabledText: "rgba(255,255,255,0.25)",
     t1: "#ffffff",
-    t2: "rgba(255,255,255,0.62)",
-    t3: "rgba(255,255,255,0.38)",
+    t2: "rgba(255,255,255,0.60)",
+    t3: "rgba(255,255,255,0.35)",
     labelColor: "rgba(255,255,255,0.55)",
     requiredStar: "#f87171",
     sectionLabel: "rgba(255,255,255,0.40)",
     sectionLine: "rgba(255,255,255,0.06)",
-    toggleOff: "rgba(255,255,255,0.06)",
-    toggleOffBorder: "rgba(255,255,255,0.08)",
-    toggleOffText: "rgba(255,255,255,0.70)",
-    toggleOffSub: "rgba(255,255,255,0.35)",
-    toggleOn: "rgba(99,102,241,0.18)",
-    toggleOnBorder: "rgba(99,102,241,0.40)",
-    toggleOnText: "#ffffff",
-    toggleOnSub: "rgba(99,102,241,0.80)",
-    toggleDot: "#818cf8",
-    toggleDotOff: "rgba(255,255,255,0.20)",
+    sectionIconBg: "rgba(255,255,255,0.05)",
     errorBg: "rgba(239,68,68,0.08)",
     errorBorder: "rgba(239,68,68,0.18)",
     errorText: "#fca5a5",
@@ -113,6 +112,9 @@ const AC = {
     reviewRowAlt: "rgba(255,255,255,0.02)",
     reviewKey: "rgba(255,255,255,0.50)",
     reviewVal: "#ffffff",
+    reviewSectionBg: "rgba(255,255,255,0.02)",
+    reviewSectionText: "rgba(255,255,255,0.40)",
+    reviewSectionLine: "rgba(255,255,255,0.06)",
     doneBg: "rgba(255,255,255,0.03)",
     doneAccent: "#818cf8",
     hintColor: "rgba(255,255,255,0.35)",
@@ -129,22 +131,60 @@ const AC = {
     lastAddedBorder: "rgba(34,197,94,0.15)",
     lastAddedText: "rgba(34,197,94,0.80)",
     lastAddedName: "#4ade80",
-    dropBg: "rgba(6,6,15,0.95)",
-    dropBorder: "rgba(255,255,255,0.08)",
+    dropBg: "rgba(12,12,20,0.98)",
+    dropBorder: "rgba(255,255,255,0.10)",
+    dropShadow: "0 8px 32px rgba(0,0,0,0.50)",
     dropItemText: "rgba(255,255,255,0.85)",
-    dropItemHover: "rgba(255,255,255,0.06)",
+    dropItemHover: "rgba(255,255,255,0.08)",
+    dropItemActive: "rgba(99,102,241,0.15)",
+    dropSearchBg: "rgba(255,255,255,0.06)",
+    dropSearchBorder: "rgba(255,255,255,0.10)",
+    dropSearchText: "#ffffff",
+    dropSearchPlaceholder: "rgba(255,255,255,0.30)",
+    dropEmpty: "rgba(255,255,255,0.25)",
+    inlineUnlockBg: "rgba(255,255,255,0.04)",
+    inlineUnlockBorder: "rgba(255,255,255,0.08)",
+    inlineUnlockText: "rgba(255,255,255,0.50)",
+    inlineUnlockAccent: "#818cf8",
+    noteBg: "rgba(255,255,255,0.04)",
+    noteBorder: "rgba(255,255,255,0.08)",
+    noteText: "#ffffff",
+    notePlaceholder: "rgba(255,255,255,0.25)",
+    // Toggle (iOS style)
+    toggleTrackOff: "rgba(255,255,255,0.12)",
+    toggleTrackOn: "#22c55e",
+    toggleTrackNeutral: "rgba(255,255,255,0.12)",
+    toggleThumb: "#ffffff",
+    toggleThumbShadow: "0 1px 3px rgba(0,0,0,0.3)",
+    // Tri-state lifestyle
+    triNeutralBg: "rgba(255,255,255,0.04)",
+    triNeutralBorder: "rgba(255,255,255,0.08)",
+    triNeutralText: "rgba(255,255,255,0.45)",
+    triNeutralDot: "rgba(255,255,255,0.15)",
+    triYesBg: "rgba(34,197,94,0.08)",
+    triYesBorder: "rgba(34,197,94,0.20)",
+    triYesText: "#4ade80",
+    triNoBg: "rgba(239,68,68,0.06)",
+    triNoBorder: "rgba(239,68,68,0.15)",
+    triNoText: "rgba(248,113,113,0.80)",
+    triExpandBg: "rgba(255,255,255,0.02)",
+    triExpandBorder: "rgba(255,255,255,0.05)",
+    triSubLabel: "rgba(255,255,255,0.40)",
+    triIcon: "rgba(255,255,255,0.35)",
+    triPillBg: "rgba(255,255,255,0.06)",
+    triPillBorder: "rgba(255,255,255,0.10)",
+    triPillActiveBg: "rgba(255,255,255,0.10)",
   },
   light: {
     page: "#f4f4f8",
     cardBg: "rgba(255,255,255,0.70)",
     cardBorder: "rgba(0,0,0,0.06)",
-    cardHoverBg: "rgba(255,255,255,0.88)",
     inputBg: "rgba(0,0,0,0.03)",
-    inputBorder: "rgba(0,0,0,0.08)",
-    inputBorderFocus: "rgba(161,98,7,0.45)",
+    inputBorder: "rgba(0,0,0,0.10)",
+    inputBorderFocus: "rgba(161,98,7,0.55)",
     inputText: "#0f172a",
     inputPlaceholder: "rgba(15,23,42,0.30)",
-    inputFocusRing: "rgba(161,98,7,0.18)",
+    inputFocusRing: "rgba(161,98,7,0.15)",
     inputDisabledBg: "rgba(0,0,0,0.02)",
     inputDisabledText: "rgba(15,23,42,0.30)",
     t1: "#0f172a",
@@ -154,16 +194,7 @@ const AC = {
     requiredStar: "#dc2626",
     sectionLabel: "rgba(15,23,42,0.40)",
     sectionLine: "rgba(0,0,0,0.06)",
-    toggleOff: "rgba(0,0,0,0.03)",
-    toggleOffBorder: "rgba(0,0,0,0.08)",
-    toggleOffText: "rgba(15,23,42,0.70)",
-    toggleOffSub: "rgba(15,23,42,0.35)",
-    toggleOn: "rgba(161,98,7,0.10)",
-    toggleOnBorder: "rgba(161,98,7,0.30)",
-    toggleOnText: "#0f172a",
-    toggleOnSub: "rgba(161,98,7,0.80)",
-    toggleDot: "#a16207",
-    toggleDotOff: "rgba(0,0,0,0.15)",
+    sectionIconBg: "rgba(0,0,0,0.03)",
     errorBg: "rgba(220,38,38,0.05)",
     errorBorder: "rgba(220,38,38,0.12)",
     errorText: "#dc2626",
@@ -180,6 +211,9 @@ const AC = {
     reviewRowAlt: "rgba(0,0,0,0.02)",
     reviewKey: "rgba(15,23,42,0.50)",
     reviewVal: "#0f172a",
+    reviewSectionBg: "rgba(0,0,0,0.02)",
+    reviewSectionText: "rgba(15,23,42,0.40)",
+    reviewSectionLine: "rgba(0,0,0,0.06)",
     doneBg: "rgba(0,0,0,0.02)",
     doneAccent: "#a16207",
     hintColor: "rgba(15,23,42,0.35)",
@@ -196,15 +230,52 @@ const AC = {
     lastAddedBorder: "rgba(22,163,74,0.12)",
     lastAddedText: "rgba(22,163,74,0.75)",
     lastAddedName: "#15803d",
-    dropBg: "rgba(255,255,255,0.98)",
-    dropBorder: "rgba(0,0,0,0.08)",
+    dropBg: "rgba(255,255,255,0.99)",
+    dropBorder: "rgba(0,0,0,0.10)",
+    dropShadow: "0 8px 32px rgba(0,0,0,0.12)",
     dropItemText: "rgba(15,23,42,0.80)",
     dropItemHover: "rgba(0,0,0,0.04)",
+    dropItemActive: "rgba(161,98,7,0.08)",
+    dropSearchBg: "rgba(0,0,0,0.03)",
+    dropSearchBorder: "rgba(0,0,0,0.08)",
+    dropSearchText: "#0f172a",
+    dropSearchPlaceholder: "rgba(15,23,42,0.30)",
+    dropEmpty: "rgba(15,23,42,0.30)",
+    inlineUnlockBg: "rgba(0,0,0,0.02)",
+    inlineUnlockBorder: "rgba(0,0,0,0.06)",
+    inlineUnlockText: "rgba(15,23,42,0.45)",
+    inlineUnlockAccent: "#a16207",
+    noteBg: "rgba(0,0,0,0.02)",
+    noteBorder: "rgba(0,0,0,0.06)",
+    noteText: "#0f172a",
+    notePlaceholder: "rgba(15,23,42,0.25)",
+    toggleTrackOff: "rgba(0,0,0,0.12)",
+    toggleTrackOn: "#16a34a",
+    toggleTrackNeutral: "rgba(0,0,0,0.12)",
+    toggleThumb: "#ffffff",
+    toggleThumbShadow: "0 1px 3px rgba(0,0,0,0.15)",
+    triNeutralBg: "rgba(0,0,0,0.02)",
+    triNeutralBorder: "rgba(0,0,0,0.06)",
+    triNeutralText: "rgba(15,23,42,0.40)",
+    triNeutralDot: "rgba(0,0,0,0.10)",
+    triYesBg: "rgba(22,163,74,0.06)",
+    triYesBorder: "rgba(22,163,74,0.15)",
+    triYesText: "#15803d",
+    triNoBg: "rgba(220,38,38,0.04)",
+    triNoBorder: "rgba(220,38,38,0.10)",
+    triNoText: "#dc2626",
+    triExpandBg: "rgba(0,0,0,0.015)",
+    triExpandBorder: "rgba(0,0,0,0.04)",
+    triSubLabel: "rgba(15,23,42,0.40)",
+    triIcon: "rgba(15,23,42,0.30)",
+    triPillBg: "rgba(0,0,0,0.03)",
+    triPillBorder: "rgba(0,0,0,0.08)",
+    triPillActiveBg: "rgba(0,0,0,0.06)",
   },
 };
 
 /* ═══════════════════════════════════════════════
-   HELPERS
+   HELPERS  (unchanged logic)
    ═══════════════════════════════════════════════ */
 
 function makeSubmissionId() {
@@ -236,9 +307,16 @@ function hasMeaningfulDraft(form) {
     String(form.approver || "").trim() || String(form.maritalStatus || "").trim() ||
     String(form.familyPermissionRelation || "").trim() ||
     String(form.familyPermissionOther || "").trim() ||
-    String(form.remarks || "").trim() || String(form.dikshaYear || "").trim() ||
+    String(form.note || "").trim() ||
+    String(form.petNote || "").trim() ||
+    String(form.guruNote || "").trim() ||
+    String(form.nashaNote || "").trim() ||
+    String(form.dikshaYear || "").trim() ||
     String(form.vrindavanVisits || "").trim() || String(form.firstDikshaYear || "").trim() ||
-    form.onionGarlic || form.hasPet || form.hadTeacherBefore || form.nasha
+    form.onionGarlic === true || form.onionGarlic === false ||
+    form.hasPet === true || form.hasPet === false ||
+    form.hadTeacherBefore === true || form.hadTeacherBefore === false ||
+    form.nasha === true || form.nasha === false
   );
 }
 
@@ -252,9 +330,7 @@ function timeAgo(dateStr) {
     if (hrs < 24) return `${hrs}h ago`;
     const days = Math.floor(hrs / 24);
     return `${days}d ago`;
-  } catch {
-    return "";
-  }
+  } catch { return ""; }
 }
 
 function loadLastAdded() {
@@ -273,8 +349,18 @@ function saveLastAdded(name, rollNo) {
   } catch {}
 }
 
+function validateYear(val) {
+  const v = String(val || "").trim();
+  if (!v) return "";
+  const n = parseInt(v, 10);
+  if (isNaN(n)) return "Invalid year";
+  if (n < MIN_YEAR) return `Year must be ${MIN_YEAR} or later`;
+  if (n > CURRENT_YEAR) return `Year cannot be after ${CURRENT_YEAR}`;
+  return "";
+}
+
 /* ═══════════════════════════════════════════════
-   CACHE
+   CACHE  (unchanged)
    ═══════════════════════════════════════════════ */
 
 const _cache = { countries: null, states: {}, cities: {} };
@@ -285,17 +371,14 @@ async function loadCountries() {
     const stored = sessionStorage.getItem("sb_countries");
     if (stored) {
       const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed) && parsed.length > 10) {
-        _cache.countries = parsed;
-        return parsed;
-      }
+      if (Array.isArray(parsed) && parsed.length > 10) { _cache.countries = parsed; return parsed; }
     }
   } catch {}
   try {
     const res = await fetch("https://restcountries.com/v3.1/all");
     const data = await res.json().catch(() => []);
     const list = (data || [])
-      .map((c) => ({ name: c?.name?.common, flag: c?.flag || "", code: c?.cca2 || c?.name?.common }))
+      .map((co) => ({ name: co?.name?.common, flag: co?.flag || "", code: co?.cca2 || co?.name?.common }))
       .filter((x) => x.name)
       .sort((a, b) => String(a.name).localeCompare(String(b.name)));
     if (list.length) {
@@ -319,8 +402,8 @@ async function loadStates(country) {
         body: JSON.stringify({ country: "India" }),
       });
       const data = await res.json().catch(() => ({}));
-      const states = uniqStrings((data?.data?.states || []).map((s) => s.name).filter(Boolean));
-      if (states.length) { _cache.states[ck] = states; return states; }
+      const st = uniqStrings((data?.data?.states || []).map((s) => s.name).filter(Boolean));
+      if (st.length) { _cache.states[ck] = st; return st; }
     } catch {}
     _cache.states[ck] = INDIA_STATES_FALLBACK;
     return INDIA_STATES_FALLBACK;
@@ -331,8 +414,8 @@ async function loadStates(country) {
       body: JSON.stringify({ country }),
     });
     const data = await res.json().catch(() => ({}));
-    const states = uniqStrings((data?.data?.states || []).map((s) => s?.name).filter(Boolean));
-    if (states.length) { _cache.states[ck] = states; return states; }
+    const st = uniqStrings((data?.data?.states || []).map((s) => s?.name).filter(Boolean));
+    if (st.length) { _cache.states[ck] = st; return st; }
   } catch {}
   const fb = STATES_BACKUP[country] || [];
   if (fb.length) _cache.states[ck] = fb;
@@ -349,8 +432,8 @@ async function loadCities(country, state) {
       body: JSON.stringify({ country, state }),
     });
     const data = await res.json().catch(() => ({}));
-    const cities = uniqStrings(data?.data || []).sort((a, b) => a.localeCompare(b));
-    if (cities.length) { _cache.cities[ck] = cities; return cities; }
+    const ci = uniqStrings(data?.data || []).sort((a, b) => a.localeCompare(b));
+    if (ci.length) { _cache.cities[ck] = ci; return ci; }
   } catch {}
   return [];
 }
@@ -369,14 +452,20 @@ function useDebouncedEffect(fn, deps, delay = 500) {
 }
 
 /* ═══════════════════════════════════════════════
-   THEMED SUB-COMPONENTS
+   STYLED SUB-COMPONENTS
    ═══════════════════════════════════════════════ */
 
+/* ── Section Header ── */
 function SectionHeader({ icon, label, c }) {
   return (
-    <div className="sm:col-span-2 flex items-center gap-3 mt-5 mb-1">
-      <span className="text-lg">{icon}</span>
-      <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: c.sectionLabel }}>
+    <div className="sm:col-span-2 flex items-center gap-3 mt-6 max-md:mt-5 mb-2 max-md:mb-1.5">
+      <div
+        className="w-8 h-8 max-md:w-7 max-md:h-7 rounded-xl max-md:rounded-lg flex items-center justify-center text-base max-md:text-sm flex-shrink-0"
+        style={{ background: c.sectionIconBg }}
+      >
+        {icon}
+      </div>
+      <span className="text-[11px] max-md:text-[10px] font-bold uppercase tracking-widest" style={{ color: c.sectionLabel }}>
         {label}
       </span>
       <div className="flex-1 h-px" style={{ background: c.sectionLine }} />
@@ -384,109 +473,420 @@ function SectionHeader({ icon, label, c }) {
   );
 }
 
+/* ── Inline Field (label LEFT, input RIGHT) ── */
 function Field({ label, value, onChange, required, placeholder, type = "text", error, c, disabled, hint }) {
   return (
     <div>
-      <div className="text-[11px] font-semibold mb-1.5 flex items-center gap-1" style={{ color: c.labelColor }}>
-        {label}
-        {required && <span style={{ color: c.requiredStar }}>*</span>}
+      <div className="flex items-center gap-3 max-md:flex-col max-md:items-stretch max-md:gap-1">
+        <div
+          className="text-[12px] max-md:text-[11px] font-semibold flex items-center gap-1 min-w-[130px] max-md:min-w-0 flex-shrink-0"
+          style={{ color: c.labelColor }}
+        >
+          {label}
+          {required && <span style={{ color: c.requiredStar }}>*</span>}
+        </div>
+        <input
+          value={value}
+          type={type}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          disabled={disabled}
+          className="flex-1 w-full rounded-2xl max-md:rounded-xl border px-4 max-md:px-3.5 py-3 max-md:py-2.5 text-[13px] outline-none transition-all duration-200"
+          style={{
+            background: disabled ? c.inputDisabledBg : c.inputBg,
+            borderColor: error ? c.errorInline : c.inputBorder,
+            color: disabled ? c.inputDisabledText : c.inputText,
+          }}
+          onFocusCapture={(e) => {
+            if (!disabled) {
+              e.currentTarget.style.boxShadow = `0 0 0 3px ${c.inputFocusRing}`;
+              e.currentTarget.style.borderColor = c.inputBorderFocus;
+            }
+          }}
+          onBlurCapture={(e) => {
+            e.currentTarget.style.boxShadow = "none";
+            e.currentTarget.style.borderColor = error ? c.errorInline : c.inputBorder;
+          }}
+        />
       </div>
-      <input
-        value={value}
-        type={type}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        disabled={disabled}
-        className="w-full rounded-2xl border px-4 py-3 text-[13px] outline-none transition-all duration-200"
-        style={{
-          background: disabled ? c.inputDisabledBg : c.inputBg,
-          borderColor: error ? c.errorInline : c.inputBorder,
-          color: disabled ? c.inputDisabledText : c.inputText,
-        }}
-        onFocusCapture={(e) => {
-          if (!disabled) {
-            e.currentTarget.style.boxShadow = `0 0 0 3px ${c.inputFocusRing}`;
-            e.currentTarget.style.borderColor = c.inputBorderFocus;
-          }
-        }}
-        onBlurCapture={(e) => {
-          e.currentTarget.style.boxShadow = "none";
-          e.currentTarget.style.borderColor = error ? c.errorInline : c.inputBorder;
-        }}
-      />
-      {error && <div className="text-[11px] mt-1 font-medium" style={{ color: c.errorInline }}>{error}</div>}
-      {hint && !error && <div className="text-[10px] mt-1" style={{ color: c.hintColor }}>{hint}</div>}
+      {error && (
+        <div className="flex items-center gap-1.5 mt-1 ml-[142px] max-md:ml-0">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill={c.errorInline} className="flex-shrink-0">
+            <path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 10.5a.75.75 0 110-1.5.75.75 0 010 1.5zM8.75 4.5v4a.75.75 0 01-1.5 0v-4a.75.75 0 011.5 0z"/>
+          </svg>
+          <span className="text-[11px] max-md:text-[10px] font-medium" style={{ color: c.errorInline }}>{error}</span>
+        </div>
+      )}
+      {hint && !error && (
+        <div className="text-[10px] max-md:text-[9px] mt-1 ml-[142px] max-md:ml-0" style={{ color: c.hintColor }}>{hint}</div>
+      )}
     </div>
   );
 }
 
-function Select({ label, value, onChange, options, required, c, disabled, error, children }) {
+/* ── Custom Searchable Dropdown ── */
+function SearchableSelect({ label, value, onChange, options, required, c, disabled, error, placeholder = "Search..." }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const wrapRef = useRef(null);
+  const searchRef = useRef(null);
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    if (!q) return options || [];
+    return (options || []).filter((o) => {
+      const text = typeof o === "object" ? (o.label || o.name || "") : String(o);
+      return text.toLowerCase().includes(q);
+    });
+  }, [search, options]);
+
+  const displayValue = useMemo(() => {
+    if (!value) return "";
+    if (typeof options?.[0] === "object") {
+      const found = (options || []).find((o) => o.value === value || o.name === value);
+      return found?.label || found?.name || value;
+    }
+    return value;
+  }, [value, options]);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  useEffect(() => {
+    if (open && searchRef.current) searchRef.current.focus();
+  }, [open]);
+
   return (
     <div>
-      <div className="text-[11px] font-semibold mb-1.5 flex items-center gap-1" style={{ color: c.labelColor }}>
-        {label}
-        {required && <span style={{ color: c.requiredStar }}>*</span>}
+      <div className="flex items-center gap-3 max-md:flex-col max-md:items-stretch max-md:gap-1">
+        <div
+          className="text-[12px] max-md:text-[11px] font-semibold flex items-center gap-1 min-w-[130px] max-md:min-w-0 flex-shrink-0"
+          style={{ color: c.labelColor }}
+        >
+          {label}
+          {required && <span style={{ color: c.requiredStar }}>*</span>}
+        </div>
+
+        <div className="relative flex-1 w-full" ref={wrapRef}>
+          {/* Trigger */}
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => { if (!disabled) { setOpen(!open); setSearch(""); } }}
+            className="w-full rounded-2xl max-md:rounded-xl border px-4 max-md:px-3.5 py-3 max-md:py-2.5 text-[13px] text-left outline-none transition-all duration-200 flex items-center justify-between gap-2"
+            style={{
+              background: disabled ? c.inputDisabledBg : c.inputBg,
+              borderColor: open ? c.inputBorderFocus : error ? c.errorInline : c.inputBorder,
+              color: displayValue ? (disabled ? c.inputDisabledText : c.inputText) : c.inputPlaceholder,
+              boxShadow: open ? `0 0 0 3px ${c.inputFocusRing}` : "none",
+            }}
+          >
+            <span className="truncate">{displayValue || "Select..."}</span>
+            <svg
+              width="14" height="14" viewBox="0 0 16 16" fill="none"
+              className="flex-shrink-0 transition-transform duration-200"
+              style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+            >
+              <path d="M4 6l4 4 4-4" stroke={c.t3} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+
+          {/* Dropdown Panel */}
+          {open && (
+            <div
+              className="absolute left-0 right-0 mt-1.5 rounded-2xl max-md:rounded-xl border overflow-hidden"
+              style={{
+                background: c.dropBg,
+                borderColor: c.dropBorder,
+                boxShadow: c.dropShadow,
+                zIndex: 9999,
+                backdropFilter: "blur(20px)",
+                WebkitBackdropFilter: "blur(20px)",
+              }}
+            >
+              {/* Search */}
+              <div className="p-2 max-md:p-1.5" style={{ borderBottom: `1px solid ${c.dropBorder}` }}>
+                <input
+                  ref={searchRef}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={placeholder}
+                  className="w-full rounded-xl max-md:rounded-lg border px-3 max-md:px-2.5 py-2 max-md:py-1.5 text-[12px] max-md:text-[11px] outline-none transition-all duration-200"
+                  style={{
+                    background: c.dropSearchBg,
+                    borderColor: c.dropSearchBorder,
+                    color: c.dropSearchText,
+                  }}
+                  onFocusCapture={(e) => { e.currentTarget.style.boxShadow = `0 0 0 2px ${c.inputFocusRing}`; }}
+                  onBlurCapture={(e) => { e.currentTarget.style.boxShadow = "none"; }}
+                />
+              </div>
+
+              {/* Items */}
+              <div className="max-h-48 max-md:max-h-40 overflow-y-auto overscroll-contain">
+                {filtered.length === 0 && (
+                  <div className="px-4 py-3 text-[12px] text-center" style={{ color: c.dropEmpty }}>
+                    No results found
+                  </div>
+                )}
+                {filtered.map((item, idx) => {
+                  const val = typeof item === "object" ? (item.value || item.name) : item;
+                  const lbl = typeof item === "object" ? (item.label || item.name) : item;
+                  const isActive = val === value;
+                  return (
+                    <button
+                      key={`${val}_${idx}`}
+                      type="button"
+                      onClick={() => { onChange(val); setOpen(false); setSearch(""); }}
+                      className="w-full text-left px-4 max-md:px-3 py-2.5 max-md:py-2 text-[12px] max-md:text-[11px] font-medium transition-colors duration-100 flex items-center justify-between"
+                      style={{
+                        color: isActive ? c.acc : c.dropItemText,
+                        background: isActive ? c.dropItemActive : "transparent",
+                      }}
+                      onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = c.dropItemHover; }}
+                      onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
+                    >
+                      <span>{lbl}</span>
+                      {isActive && (
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill={c.acc}>
+                          <path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"/>
+                        </svg>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        disabled={disabled}
-        className="w-full rounded-2xl border px-4 py-3 text-[13px] outline-none transition-all duration-200 appearance-none"
-        style={{
-          background: disabled ? c.inputDisabledBg : c.inputBg,
-          borderColor: error ? c.errorInline : c.inputBorder,
-          color: disabled ? c.inputDisabledText : c.inputText,
-        }}
-        onFocusCapture={(e) => {
-          if (!disabled) e.currentTarget.style.boxShadow = `0 0 0 3px ${c.inputFocusRing}`;
-        }}
-        onBlurCapture={(e) => { e.currentTarget.style.boxShadow = "none"; }}
-      >
-        {children || (
-          <>
-            <option value="">Select...</option>
-            {(options || []).map((x, idx) => <option key={`${x}_${idx}`} value={x}>{x}</option>)}
-          </>
-        )}
-      </select>
-      {error && <div className="text-[11px] mt-1 font-medium" style={{ color: c.errorInline }}>{error}</div>}
+      {error && (
+        <div className="flex items-center gap-1.5 mt-1 ml-[142px] max-md:ml-0">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill={c.errorInline} className="flex-shrink-0">
+            <path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 10.5a.75.75 0 110-1.5.75.75 0 010 1.5zM8.75 4.5v4a.75.75 0 01-1.5 0v-4a.75.75 0 011.5 0z"/>
+          </svg>
+          <span className="text-[11px] max-md:text-[10px] font-medium" style={{ color: c.errorInline }}>{error}</span>
+        </div>
+      )}
     </div>
   );
 }
 
+/* ── Native Select (for Gender etc — small sets) ── */
+function NativeSelect({ label, value, onChange, c, children, required, error, disabled }) {
+  return (
+    <div>
+      <div className="flex items-center gap-3 max-md:flex-col max-md:items-stretch max-md:gap-1">
+        <div
+          className="text-[12px] max-md:text-[11px] font-semibold flex items-center gap-1 min-w-[130px] max-md:min-w-0 flex-shrink-0"
+          style={{ color: c.labelColor }}
+        >
+          {label}
+          {required && <span style={{ color: c.requiredStar }}>*</span>}
+        </div>
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
+          className="flex-1 w-full rounded-2xl max-md:rounded-xl border px-4 max-md:px-3.5 py-3 max-md:py-2.5 text-[13px] outline-none transition-all duration-200 appearance-none"
+          style={{
+            background: disabled ? c.inputDisabledBg : c.inputBg,
+            borderColor: error ? c.errorInline : c.inputBorder,
+            color: disabled ? c.inputDisabledText : c.inputText,
+          }}
+          onFocusCapture={(e) => {
+            if (!disabled) { e.currentTarget.style.boxShadow = `0 0 0 3px ${c.inputFocusRing}`; e.currentTarget.style.borderColor = c.inputBorderFocus; }
+          }}
+          onBlurCapture={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.borderColor = error ? c.errorInline : c.inputBorder; }}
+        >
+          {children}
+        </select>
+      </div>
+      {error && (
+        <div className="flex items-center gap-1.5 mt-1 ml-[142px] max-md:ml-0">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill={c.errorInline} className="flex-shrink-0">
+            <path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 10.5a.75.75 0 110-1.5.75.75 0 010 1.5zM8.75 4.5v4a.75.75 0 01-1.5 0v-4a.75.75 0 011.5 0z"/>
+          </svg>
+          <span className="text-[11px] max-md:text-[10px] font-medium" style={{ color: c.errorInline }}>{error}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Occupation Searchable ── */
 function OccupationField({ value, onChange, c }) {
   return (
-    <div>
-      <div className="text-[11px] font-semibold mb-1.5" style={{ color: c.labelColor }}>Occupation</div>
-      <SuggestInputInline
-        value={value}
-        onChange={onChange}
-        suggestions={OCCUPATION_SUGGESTIONS}
-        placeholder="e.g. Business, Private Job..."
-        c={c}
+    <SearchableSelect
+      label="Occupation"
+      value={value}
+      onChange={onChange}
+      options={OCCUPATION_SUGGESTIONS}
+      c={c}
+      placeholder="Search occupation..."
+    />
+  );
+}
+
+/* ── iOS Toggle Switch ── */
+function IOSToggle({ checked, onChange, c }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className="relative w-[44px] h-[26px] max-md:w-[40px] max-md:h-[24px] rounded-full transition-all duration-300 flex-shrink-0"
+      style={{
+        background: checked ? c.toggleTrackOn : c.toggleTrackOff,
+      }}
+    >
+      <div
+        className="absolute top-[3px] w-[20px] h-[20px] max-md:w-[18px] max-md:h-[18px] max-md:top-[3px] rounded-full transition-all duration-300"
+        style={{
+          left: checked ? "calc(100% - 23px)" : "3px",
+          background: c.toggleThumb,
+          boxShadow: c.toggleThumbShadow,
+        }}
       />
+    </button>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   TRI-STATE LIFESTYLE TOGGLE
+   value: null (neutral) | true (yes) | false (no)
+   ═══════════════════════════════════════════════ */
+
+
+
+function TriStateCard({ icon, label, value, onChange, expandContent, c }) {
+  const isYes = value === true;
+  const isNo = value === false;
+  const isNeutral = value === null || value === undefined;
+
+  const bgColor = isYes ? c.triYesBg : isNo ? c.triNoBg : c.triNeutralBg;
+  const borderColor = isYes ? c.triYesBorder : isNo ? c.triNoBorder : c.triNeutralBorder;
+  const textColor = isYes ? c.triYesText : isNo ? c.triNoText : c.triNeutralText;
+
+  return (
+    <div
+      className="rounded-2xl max-md:rounded-xl border overflow-hidden transition-all duration-200"
+      style={{ background: bgColor, borderColor }}
+    >
+      <div className="flex items-center gap-3 max-md:gap-2.5 px-4 max-md:px-3 py-3.5 max-md:py-3">
+        <span className="text-lg max-md:text-base flex-shrink-0">{icon}</span>
+
+        <div className="flex-1 min-w-0">
+          <div
+            className="text-[12.5px] max-md:text-[11.5px] font-semibold leading-tight"
+            style={{ color: textColor }}
+          >
+            {label}
+          </div>
+          <div
+            className="text-[10px] max-md:text-[9px] font-medium mt-0.5"
+            style={{
+              color: isYes ? c.triYesText : isNo ? c.triNoText : c.hintColor,
+              opacity: isNeutral ? 0.6 : 0.8,
+            }}
+          >
+            {isYes ? "✓ Yes" : isNo ? "✗ No" : "Not selected"}
+          </div>
+        </div>
+
+        <div
+          className="flex rounded-xl max-md:rounded-lg overflow-hidden border flex-shrink-0"
+          style={{ borderColor: c.triPillBorder, background: c.triPillBg }}
+        >
+          <button
+            type="button"
+            onClick={() => onChange(false)}
+            className="px-3 max-md:px-2.5 py-1.5 max-md:py-1 text-[11px] max-md:text-[10px] font-bold transition-all duration-150 active:scale-95"
+            style={{
+              background: isNo ? c.triNoBg : "transparent",
+              color: isNo ? c.triNoText : c.triIcon,
+              borderRight: `1px solid ${c.triPillBorder}`,
+              boxShadow: isNo ? `inset 0 0 0 1.5px ${c.triNoBorder}` : "none",
+            }}
+          >
+            No
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange(null)}
+            className="px-3 max-md:px-2.5 py-1.5 max-md:py-1 text-[11px] max-md:text-[10px] font-bold transition-all duration-150 active:scale-95"
+            style={{
+              background: isNeutral ? c.triPillActiveBg : "transparent",
+              color: isNeutral ? c.triNeutralText : c.triIcon,
+              borderRight: `1px solid ${c.triPillBorder}`,
+              boxShadow: isNeutral ? `inset 0 0 0 1.5px ${c.triNeutralBorder}` : "none",
+            }}
+          >
+            —
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange(true)}
+            className="px-3 max-md:px-2.5 py-1.5 max-md:py-1 text-[11px] max-md:text-[10px] font-bold transition-all duration-150 active:scale-95"
+            style={{
+              background: isYes ? c.triYesBg : "transparent",
+              color: isYes ? c.triYesText : c.triIcon,
+              boxShadow: isYes ? `inset 0 0 0 1.5px ${c.triYesBorder}` : "none",
+            }}
+          >
+            Yes
+          </button>
+        </div>
+
+        <div
+          className="w-2.5 h-2.5 max-md:w-2 max-md:h-2 rounded-full flex-shrink-0 transition-all duration-200"
+          style={{
+            background: isYes ? c.triYesText : isNo ? c.triNoText : c.triNeutralDot,
+          }}
+        />
+      </div>
+
+      {isYes && expandContent && (
+        <div
+          className="px-4 max-md:px-3 pb-4 max-md:pb-3 pt-1 transition-all duration-200"
+          style={{
+            borderTop: `1px solid ${c.triExpandBorder}`,
+            background: c.triExpandBg,
+          }}
+        >
+          {expandContent}
+        </div>
+      )}
     </div>
   );
 }
 
-// Inline SuggestInput (no external import needed for occupation)
+
+
+/* ── Suggest Input for expand fields ── */
 function SuggestInputInline({ value, onChange, suggestions, placeholder, c }) {
   const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
   const filtered = useMemo(() => {
     const v = (value || "").toLowerCase();
     const list = v ? suggestions.filter((s) => String(s).toLowerCase().includes(v)) : suggestions;
-    return list.slice(0, 30);
+    return list.slice(0, 20);
   }, [value, suggestions]);
 
   return (
-    <div className="relative">
+    <div className="relative" ref={wrapRef}>
       <input
         value={value}
         onChange={(e) => { onChange(e.target.value); setOpen(true); }}
         onFocus={() => setOpen(true)}
-        onBlur={() => setTimeout(() => setOpen(false), 120)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder={placeholder}
-        className="w-full rounded-2xl border px-4 py-3 text-[13px] outline-none transition-all duration-200"
+        className="w-full rounded-xl max-md:rounded-lg border px-3.5 max-md:px-3 py-2.5 max-md:py-2 text-[12px] max-md:text-[11px] outline-none transition-all duration-200"
         style={{ background: c.inputBg, borderColor: c.inputBorder, color: c.inputText }}
         onFocusCapture={(e) => {
           e.currentTarget.style.boxShadow = `0 0 0 3px ${c.inputFocusRing}`;
@@ -499,14 +899,22 @@ function SuggestInputInline({ value, onChange, suggestions, placeholder, c }) {
       />
       {open && filtered.length > 0 && (
         <div
-          className="absolute z-[200] mt-1.5 w-full rounded-2xl border overflow-hidden max-h-52 overflow-y-auto"
-          style={{ background: c.dropBg, borderColor: c.dropBorder, backdropFilter: "blur(20px)" }}
+          className="absolute mt-1.5 w-full rounded-xl max-md:rounded-lg border overflow-hidden max-h-44 overflow-y-auto overscroll-contain"
+          style={{
+            background: c.dropBg,
+            borderColor: c.dropBorder,
+            boxShadow: c.dropShadow,
+            zIndex: 9999,
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+          }}
         >
-          {filtered.map((s) => (
+          {filtered.map((s, idx) => (
             <button
-              key={s} type="button"
+              key={`${s}_${idx}`}
+              type="button"
               onMouseDown={() => { onChange(String(s)); setOpen(false); }}
-              className="w-full text-left px-4 py-2.5 text-[12px] font-medium transition-colors duration-100"
+              className="w-full text-left px-3.5 max-md:px-3 py-2 max-md:py-1.5 text-[11px] max-md:text-[10px] font-medium transition-colors duration-100"
               style={{ color: c.dropItemText }}
               onMouseEnter={(e) => { e.currentTarget.style.background = c.dropItemHover; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
@@ -520,49 +928,18 @@ function SuggestInputInline({ value, onChange, suggestions, placeholder, c }) {
   );
 }
 
-function Toggle({ label, val, setVal, c }) {
-  return (
-    <button
-      type="button"
-      onClick={() => setVal(!val)}
-      className="rounded-2xl border px-3.5 py-2.5 text-left transition-all duration-200 w-full"
-      style={{
-        background: val ? c.toggleOn : c.toggleOff,
-        borderColor: val ? c.toggleOnBorder : c.toggleOffBorder,
-      }}
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-[12px] font-semibold" style={{ color: val ? c.toggleOnText : c.toggleOffText }}>
-            {label}
-          </div>
-          <div className="text-[10px] font-bold mt-0.5" style={{ color: val ? c.toggleOnSub : c.toggleOffSub }}>
-            {val ? "YES" : "NO"}
-          </div>
-        </div>
-        <div
-          className="w-5 h-5 rounded-full flex items-center justify-center transition-all duration-200"
-          style={{ background: val ? c.toggleDot : c.toggleDotOff }}
-        >
-          {val && (
-            <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-              <path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          )}
-        </div>
-      </div>
-    </button>
-  );
-}
-
+/* ── Error Banner ── */
 function ErrorBanner({ message, c }) {
   if (!message) return null;
   return (
     <div
-      className="mb-4 rounded-2xl border px-4 py-3 text-[13px] font-medium flex items-center gap-2"
+      className="mb-4 max-md:mb-3 rounded-2xl max-md:rounded-xl border px-4 max-md:px-3 py-3 max-md:py-2.5 text-[13px] max-md:text-[12px] font-medium flex items-center gap-2"
       style={{ background: c.errorBg, borderColor: c.errorBorder, color: c.errorText }}
     >
-      <span>⚠️</span> {message}
+      <svg width="16" height="16" viewBox="0 0 16 16" fill={c.errorText} className="flex-shrink-0">
+        <path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 10.5a.75.75 0 110-1.5.75.75 0 010 1.5zM8.75 4.5v4a.75.75 0 01-1.5 0v-4a.75.75 0 011.5 0z"/>
+      </svg>
+      {message}
     </div>
   );
 }
@@ -576,127 +953,189 @@ function LoadingSpinner({ c, size = 18 }) {
   );
 }
 
+/* ── Review Sub-components ── */
+function ReviewSectionHeader({ icon, label, c }) {
+  return (
+    <div className="flex items-center gap-2.5 px-4 max-md:px-3 py-3 max-md:py-2.5" style={{ background: c.reviewSectionBg }}>
+      <span className="text-sm max-md:text-xs">{icon}</span>
+      <span className="text-[10px] max-md:text-[9px] font-bold uppercase tracking-widest" style={{ color: c.reviewSectionText }}>{label}</span>
+      <div className="flex-1 h-px" style={{ background: c.reviewSectionLine }} />
+    </div>
+  );
+}
+
 function ReviewLine({ k, v, c, alt }) {
   return (
     <div
-      className="flex items-start justify-between gap-3 px-4 py-2.5 rounded-xl"
+      className="flex items-start justify-between gap-3 max-md:gap-2 px-4 max-md:px-3 py-2.5 max-md:py-2"
       style={{ background: alt ? c.reviewRowAlt : "transparent" }}
     >
-      <div className="text-[12px] font-medium" style={{ color: c.reviewKey }}>{k}</div>
-      <div className="text-[12px] font-semibold text-right break-words max-w-[60%]" style={{ color: c.reviewVal }}>
+      <div className="text-[12px] max-md:text-[11px] font-medium flex-shrink-0" style={{ color: c.reviewKey }}>{k}</div>
+      <div className="text-[12px] max-md:text-[11px] font-semibold text-right break-words max-w-[60%]" style={{ color: c.reviewVal }}>
         {String(v ?? "").trim() || "—"}
       </div>
     </div>
   );
 }
 
-/* ═══════════════════════════════════════════════
-   EMPTY STATE / ENTRY POINT
-   ═══════════════════════════════════════════════ */
+/* ── Inline Remarks Unlock ── */
+function InlineRemarksUnlock({ remarksUnlocked, formCreator, onFormCreatorChange, username, onUnlock, c }) {
+  const [showPwd, setShowPwd] = useState(false);
+  const [pwd, setPwd] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
+  async function doUnlock() {
+    setError("");
+    const p = String(pwd || "").trim();
+    if (!p) { setError("Enter password"); return; }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/verify-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: p }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setError(data.error || "Wrong password"); return; }
+      onUnlock();
+      setShowPwd(false);
+      setPwd("");
+    } catch { setError("Network error"); }
+    finally { setLoading(false); }
+  }
+
+  return (
+    <div className="sm:col-span-2">
+      <div className="flex items-center justify-between mb-1.5 max-md:mb-1">
+        <div className="text-[12px] max-md:text-[11px] font-semibold flex items-center gap-1.5" style={{ color: c.labelColor }}>
+          Form Creator
+          {!remarksUnlocked && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] max-md:text-[8px] font-bold"
+              style={{ background: c.inlineUnlockBg, color: c.inlineUnlockText }}>🔒 Locked</span>
+          )}
+          {remarksUnlocked && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] max-md:text-[8px] font-bold"
+              style={{ color: c.inlineUnlockAccent }}>🔓 Unlocked</span>
+          )}
+        </div>
+        {!remarksUnlocked && !showPwd && (
+          <button type="button" onClick={() => { setShowPwd(true); setError(""); setPwd(""); }}
+            className="px-3 max-md:px-2.5 py-1 rounded-xl max-md:rounded-lg text-[11px] max-md:text-[10px] font-semibold border transition-all duration-200"
+            style={{ background: c.btnGhostBg, borderColor: c.btnGhostBorder, color: c.btnGhostText }}
+          >🔓 Unlock</button>
+        )}
+      </div>
+
+      <input
+        value={formCreator}
+        onChange={(e) => onFormCreatorChange(e.target.value)}
+        readOnly={!remarksUnlocked}
+        placeholder="Form creator name..."
+        className="w-full rounded-2xl max-md:rounded-xl border px-4 max-md:px-3.5 py-3 max-md:py-2.5 text-[13px] outline-none transition-all duration-200"
+        style={{
+          background: remarksUnlocked ? c.inputBg : c.inputDisabledBg,
+          borderColor: c.inputBorder,
+          color: remarksUnlocked ? c.inputText : c.inputDisabledText,
+        }}
+        onFocusCapture={(e) => {
+          if (remarksUnlocked) { e.currentTarget.style.boxShadow = `0 0 0 3px ${c.inputFocusRing}`; e.currentTarget.style.borderColor = c.inputBorderFocus; }
+        }}
+        onBlurCapture={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.borderColor = c.inputBorder; }}
+      />
+
+      {!remarksUnlocked && showPwd && (
+        <div className="mt-2 rounded-2xl max-md:rounded-xl border p-3 max-md:p-2.5" style={{ background: c.inlineUnlockBg, borderColor: c.inlineUnlockBorder }}>
+          <div className="text-[10px] max-md:text-[9px] font-semibold mb-1.5" style={{ color: c.inlineUnlockText }}>
+            Enter password to unlock editing
+          </div>
+          <div className="flex gap-2 max-md:gap-1.5">
+            <input type="password" value={pwd} onChange={(e) => setPwd(e.target.value)} placeholder="Password..."
+              className="flex-1 rounded-xl max-md:rounded-lg border px-3 max-md:px-2.5 py-2 max-md:py-1.5 text-[12px] max-md:text-[11px] outline-none"
+              style={{ background: c.inputBg, borderColor: c.inputBorder, color: c.inputText }}
+              onKeyDown={(e) => { if (e.key === "Enter") doUnlock(); }}
+              onFocusCapture={(e) => { e.currentTarget.style.boxShadow = `0 0 0 3px ${c.inputFocusRing}`; }}
+              onBlurCapture={(e) => { e.currentTarget.style.boxShadow = "none"; }}
+            />
+            <button type="button" onClick={doUnlock} disabled={loading}
+              className="px-4 max-md:px-3 py-2 max-md:py-1.5 rounded-xl max-md:rounded-lg text-[11px] max-md:text-[10px] font-bold disabled:opacity-50"
+              style={{ background: c.btnSolidBg, color: c.btnSolidText }}>{loading ? "..." : "Unlock"}</button>
+            <button type="button" onClick={() => { setShowPwd(false); setPwd(""); setError(""); }}
+              className="px-3 max-md:px-2.5 py-2 max-md:py-1.5 rounded-xl max-md:rounded-lg text-[11px] max-md:text-[10px] border"
+              style={{ background: c.btnGhostBg, borderColor: c.btnGhostBorder, color: c.btnGhostText }}>✕</button>
+          </div>
+          {error && (
+            <div className="flex items-center gap-1.5 mt-1.5">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill={c.errorInline}><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 10.5a.75.75 0 110-1.5.75.75 0 010 1.5zM8.75 4.5v4a.75.75 0 01-1.5 0v-4a.75.75 0 011.5 0z"/></svg>
+              <span className="text-[10px] max-md:text-[9px] font-medium" style={{ color: c.errorInline }}>{error}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="text-[10px] max-md:text-[9px] mt-1" style={{ color: c.hintColor }}>
+        Default: <b style={{ color: c.t2 }}>{username}</b> • Unlock to edit creator name
+      </div>
+    </div>
+  );
+}
+
+/* ── Entry Card ── */
 function EntryCard({ onStart, onResume, hasDraft, lastAdded, c }) {
   return (
     <div className="flex flex-col items-center justify-center py-6 max-md:py-4">
-      {/* Main card */}
       <div
-        className="w-full max-w-md rounded-3xl border p-8 max-md:p-5 text-center transition-all duration-200"
-        style={{
-          background: c.cardBg,
-          borderColor: c.cardBorder,
-          boxShadow: c.headerShadow,
-        }}
+        className="w-full max-w-md rounded-3xl max-md:rounded-2xl border p-8 max-md:p-5 text-center transition-all duration-200"
+        style={{ background: c.cardBg, borderColor: c.cardBorder, boxShadow: c.headerShadow }}
       >
-        {/* Icon */}
-        <div className="flex justify-center mb-4">
+        <div className="flex justify-center mb-4 max-md:mb-3">
           <div className="relative">
-            <div
-              className="w-16 h-16 max-md:w-14 max-md:h-14 rounded-2xl flex items-center justify-center text-3xl max-md:text-2xl"
-              style={{ background: c.emptyIconBg }}
-            >
-              ➕
-            </div>
-            <div
-              className="absolute -inset-2 rounded-3xl -z-10"
-              style={{ background: c.emptyIconGlow }}
-            />
+            <div className="w-16 h-16 max-md:w-14 max-md:h-14 rounded-2xl max-md:rounded-xl flex items-center justify-center text-3xl max-md:text-2xl"
+              style={{ background: c.emptyIconBg }}>➕</div>
+            <div className="absolute -inset-2 rounded-3xl -z-10" style={{ background: c.emptyIconGlow }} />
           </div>
         </div>
+        <h3 className="text-lg max-md:text-base font-bold" style={{ color: c.t1 }}>Add Customer</h3>
+        <p className="text-[13px] max-md:text-[11px] mt-1" style={{ color: c.t3 }}>Manual entry → Saved in Recent (Today DB)</p>
 
-        <h3 className="text-lg max-md:text-base font-bold" style={{ color: c.t1 }}>
-          Add Customer
-        </h3>
-        <p className="text-[13px] max-md:text-[12px] mt-1" style={{ color: c.t3 }}>
-          Manual entry → Saved in Recent (Today DB)
-        </p>
-
-        {/* Draft badge */}
         {hasDraft && (
-          <div
-            className="inline-flex items-center gap-1.5 mt-3 px-3 py-1 rounded-full text-[11px] font-bold"
-            style={{ background: c.draftBadgeBg, color: c.draftBadgeText }}
-          >
+          <div className="inline-flex items-center gap-1.5 mt-3 max-md:mt-2.5 px-3 py-1 rounded-full text-[11px] max-md:text-[10px] font-bold"
+            style={{ background: c.draftBadgeBg, color: c.draftBadgeText }}>
             <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: c.draftBadgeText }} />
             Unsaved draft found
           </div>
         )}
 
-        {/* Buttons */}
-        <div className="mt-5 flex flex-col gap-2">
+        <div className="mt-5 max-md:mt-4 flex flex-col gap-2">
           {hasDraft ? (
             <>
-              <button
-                type="button"
-                onClick={onResume}
-                className="w-full py-3 rounded-2xl text-[13px] font-bold text-white transition-all duration-200"
-                style={{ background: c.accG, boxShadow: c.headerShadow }}
-              >
-                Resume Draft →
-              </button>
-              <button
-                type="button"
-                onClick={onStart}
-                className="w-full py-3 rounded-2xl text-[13px] font-semibold border transition-all duration-200"
-                style={{ background: c.btnGhostBg, borderColor: c.btnGhostBorder, color: c.btnGhostText }}
-              >
-                Start Fresh
-              </button>
+              <button type="button" onClick={onResume}
+                className="w-full py-3 max-md:py-2.5 rounded-2xl max-md:rounded-xl text-[13px] max-md:text-[12px] font-bold text-white transition-all active:scale-[0.98]"
+                style={{ background: c.accG, boxShadow: c.headerShadow }}>Resume Draft →</button>
+              <button type="button" onClick={onStart}
+                className="w-full py-3 max-md:py-2.5 rounded-2xl max-md:rounded-xl text-[13px] max-md:text-[12px] font-semibold border transition-all active:scale-[0.98]"
+                style={{ background: c.btnGhostBg, borderColor: c.btnGhostBorder, color: c.btnGhostText }}>Start Fresh</button>
             </>
           ) : (
-            <button
-              type="button"
-              onClick={onStart}
-              className="w-full py-3.5 rounded-2xl text-[13px] font-bold text-white transition-all duration-200"
-              style={{ background: c.accG, boxShadow: c.headerShadow }}
-            >
-              + Start Adding
-            </button>
+            <button type="button" onClick={onStart}
+              className="w-full py-3.5 max-md:py-3 rounded-2xl max-md:rounded-xl text-[13px] max-md:text-[12px] font-bold text-white transition-all active:scale-[0.98]"
+              style={{ background: c.accG, boxShadow: c.headerShadow }}>+ Start Adding</button>
           )}
         </div>
       </div>
 
-      {/* Last added strip */}
       {lastAdded && (
-        <div
-          className="mt-4 w-full max-w-md rounded-2xl border px-4 py-3 flex items-center gap-3"
-          style={{ background: c.lastAddedBg, borderColor: c.lastAddedBorder }}
-        >
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-sm"
-            style={{ background: "rgba(34,197,94,0.15)", color: "#22c55e" }}
-          >
-            ✓
-          </div>
+        <div className="mt-4 max-md:mt-3 w-full max-w-md rounded-2xl max-md:rounded-xl border px-4 max-md:px-3 py-3 max-md:py-2.5 flex items-center gap-3 max-md:gap-2.5"
+          style={{ background: c.lastAddedBg, borderColor: c.lastAddedBorder }}>
+          <div className="w-8 h-8 max-md:w-7 max-md:h-7 rounded-full flex items-center justify-center text-sm max-md:text-xs"
+            style={{ background: "rgba(34,197,94,0.15)", color: "#22c55e" }}>✓</div>
           <div className="flex-1 min-w-0">
-            <div className="text-[12px] font-bold truncate" style={{ color: c.lastAddedName }}>
-              {lastAdded.name}
-            </div>
-            <div className="text-[10px]" style={{ color: c.lastAddedText }}>
+            <div className="text-[12px] max-md:text-[11px] font-bold truncate" style={{ color: c.lastAddedName }}>{lastAdded.name}</div>
+            <div className="text-[10px] max-md:text-[9px]" style={{ color: c.lastAddedText }}>
               Roll #{lastAdded.rollNo || "—"} • {timeAgo(lastAdded.time)}
             </div>
           </div>
-          <div className="text-[10px] font-semibold" style={{ color: c.lastAddedText }}>
-            Last Added
-          </div>
+          <div className="text-[10px] max-md:text-[9px] font-semibold flex-shrink-0" style={{ color: c.lastAddedText }}>Last Added</div>
         </div>
       )}
     </div>
@@ -716,13 +1155,11 @@ export default function AddCustomer({ session }) {
   const [manualOpen, setManualOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [doneOpen, setDoneOpen] = useState(false);
-  const [unlockOpen, setUnlockOpen] = useState(false);
 
   const [submissionId, setSubmissionId] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const [apiError, setApiError] = useState("");
-  const [unlockError, setUnlockError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
 
   const [doneInfo, setDoneInfo] = useState({ rollNo: null });
@@ -737,16 +1174,24 @@ export default function AddCustomer({ session }) {
   const [cityLoading, setCityLoading] = useState(false);
 
   const [remarksUnlocked, setRemarksUnlocked] = useState(false);
-  const [unlockPwd, setUnlockPwd] = useState("");
 
+  // NOTE: lifestyle fields now use null = neutral (default)
   const [form, setForm] = useState({
     name: "", age: "", gender: "OTHER", occupation: "",
     approver: "", maritalStatus: "",
     country: "India", state: "", stateOther: "", city: "", cityOther: "",
     dikshaYear: "", vrindavanVisits: "", firstDikshaYear: "",
     familyPermissionRelation: "", familyPermissionOther: "",
-    onionGarlic: false, hasPet: false, hadTeacherBefore: false, nasha: false,
+    onionGarlic: null,
+onionGarlicNote: "",     // null=neutral, true=yes, false=no
+    hasPet: null,           // null=neutral, true=yes, false=no
+    petNote: "",
+    hadTeacherBefore: null, // null=neutral, true=yes, false=no
+    guruNote: "",
+    nasha: null,            // null=neutral, true=yes, false=no
+    nashaNote: "",
     remarks: username,
+    note: "",
   });
 
   const upd = useCallback((key, val) => {
@@ -761,12 +1206,8 @@ export default function AddCustomer({ session }) {
     return [ci, s, co].filter(Boolean).join(", ");
   }, [form.country, form.state, form.stateOther, form.city, form.cityOther]);
 
-  /* ─── Load last added + draft check ─── */
-  useEffect(() => {
-    setLastAdded(loadLastAdded());
-  }, []);
+  useEffect(() => { setLastAdded(loadLastAdded()); }, []);
 
-  /* ─── Draft: Load ─── */
   useEffect(() => {
     try {
       const raw2 = localStorage.getItem(DRAFT_KEY_V2);
@@ -779,6 +1220,15 @@ export default function AddCustomer({ session }) {
           ...prev, ...d.form,
           country: d.form.country || prev.country || "India",
           remarks: d.form.remarks || prev.remarks || username,
+          note: d.form.note || "",
+          petNote: d.form.petNote || "",
+          guruNote: d.form.guruNote || "",
+          nashaNote: d.form.nashaNote || "",
+          // Preserve null for neutral
+          onionGarlic: d.form.onionGarlic ?? null,
+          hasPet: d.form.hasPet ?? null,
+          hadTeacherBefore: d.form.hadTeacherBefore ?? null,
+          nasha: d.form.nasha ?? null,
         }));
         if (d?.submissionId) setSubmissionId(String(d.submissionId));
         setHasDraft(true);
@@ -788,48 +1238,34 @@ export default function AddCustomer({ session }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* ─── Draft: Save (debounced) ─── */
   useDebouncedEffect(() => {
     try {
-      if (!submissionId && !hasMeaningfulDraft(form)) {
-        localStorage.removeItem(DRAFT_KEY_V2);
-        return;
-      }
+      if (!submissionId && !hasMeaningfulDraft(form)) { localStorage.removeItem(DRAFT_KEY_V2); return; }
       localStorage.setItem(DRAFT_KEY_V2, JSON.stringify({
-        submissionId: submissionId || null, form,
-        updatedAt: new Date().toISOString(),
+        submissionId: submissionId || null, form, updatedAt: new Date().toISOString(),
       }));
     } catch {}
   }, [form, submissionId], 500);
 
-  /* ─── Countries ─── */
   useEffect(() => {
     let alive = true;
     (async () => {
       setCountriesLoading(true);
-      try {
-        const list = await loadCountries();
-        if (alive) setCountries(list);
-      } catch {
-        if (alive) setCountries(COUNTRIES_FALLBACK);
-      } finally {
-        if (alive) setCountriesLoading(false);
-      }
+      try { const list = await loadCountries(); if (alive) setCountries(list); }
+      catch { if (alive) setCountries(COUNTRIES_FALLBACK); }
+      finally { if (alive) setCountriesLoading(false); }
     })();
     return () => { alive = false; };
   }, []);
 
-  /* ─── States ─── */
   useEffect(() => {
     let alive = true;
     (async () => {
       const country = String(form.country || "").trim();
       if (!country) { setStates([]); return; }
       setStateLoading(true);
-      try {
-        const st = await loadStates(country);
-        if (alive) setStates(uniqStrings(st));
-      } finally { if (alive) setStateLoading(false); }
+      try { const st = await loadStates(country); if (alive) setStates(uniqStrings(st)); }
+      finally { if (alive) setStateLoading(false); }
     })();
     return () => { alive = false; };
   }, [form.country]);
@@ -837,14 +1273,10 @@ export default function AddCustomer({ session }) {
   useEffect(() => {
     if (!form.state || form.state === "__OTHER__" || !states.length) return;
     if (states.includes(form.state)) return;
-    setForm((p) => ({
-      ...p, state: "__OTHER__", stateOther: p.stateOther || p.state,
-      city: "__OTHER__", cityOther: p.cityOther || p.city || "",
-    }));
+    setForm((p) => ({ ...p, state: "__OTHER__", stateOther: p.stateOther || p.state, city: "__OTHER__", cityOther: p.cityOther || p.city || "" }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [states]);
 
-  /* ─── Cities ─── */
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -852,10 +1284,8 @@ export default function AddCustomer({ session }) {
       const state = String(form.state || "").trim();
       if (!country || !state || state === "__OTHER__") { setCities([]); return; }
       setCityLoading(true);
-      try {
-        const list = await loadCities(country, state);
-        if (alive) setCities(uniqStrings(list));
-      } finally { if (alive) setCityLoading(false); }
+      try { const list = await loadCities(country, state); if (alive) setCities(uniqStrings(list)); }
+      finally { if (alive) setCityLoading(false); }
     })();
     return () => { alive = false; };
   }, [form.country, form.state]);
@@ -867,12 +1297,10 @@ export default function AddCustomer({ session }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cities]);
 
-  /* ─── CommitGate ─── */
   const { requestCommit, CommitModal } = useCommitGate({
     defaultSuggestions: ["Created profile (manual)", "New customer entry", "Customer submitted basic details"],
   });
 
-  /* ─── Validation ─── */
   function validate() {
     const errs = {};
     const name = String(form.name || "").trim();
@@ -889,6 +1317,11 @@ export default function AddCustomer({ session }) {
     if (!state) errs.state = "State required";
     if (!city) errs.city = "City required";
 
+    const dyErr = validateYear(form.dikshaYear); if (dyErr) errs.dikshaYear = dyErr;
+    const fdyErr = validateYear(form.firstDikshaYear); if (fdyErr) errs.firstDikshaYear = fdyErr;
+    const vv = String(form.vrindavanVisits || "").trim();
+    if (vv) { const n = parseInt(vv, 10); if (isNaN(n) || n < 0) errs.vrindavanVisits = "Must be 0 or more"; }
+
     setFieldErrors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -904,24 +1337,24 @@ export default function AddCustomer({ session }) {
     return Boolean(nameOk && ageOk && countryOk && stateOk && cityOk);
   }, [form]);
 
-  /* ─── Reset ─── */
   function resetAll() {
     setApiError(""); setFieldErrors({}); setDoneInfo({ rollNo: null });
     setSubmissionId(""); setSubmitting(false); setHasDraft(false);
-    setRemarksUnlocked(false); setUnlockOpen(false); setUnlockPwd(""); setUnlockError("");
+    setRemarksUnlocked(false);
     setForm({
       name: "", age: "", gender: "OTHER", occupation: "",
       approver: "", maritalStatus: "",
       country: "India", state: "", stateOther: "", city: "", cityOther: "",
       dikshaYear: "", vrindavanVisits: "", firstDikshaYear: "",
       familyPermissionRelation: "", familyPermissionOther: "",
-      onionGarlic: false, hasPet: false, hadTeacherBefore: false, nasha: false,
-      remarks: username,
+      onionGarlic: null, onionGarlicNote: "", hasPet: null, petNote: "",
+      hadTeacherBefore: null, guruNote: "",
+      nasha: null, nashaNote: "",
+      remarks: username, note: "",
     });
     try { localStorage.removeItem(DRAFT_KEY_V2); } catch {}
   }
 
-  /* ─── Open form ─── */
   function openFresh() {
     resetAll();
     const sid = makeSubmissionId();
@@ -937,25 +1370,10 @@ export default function AddCustomer({ session }) {
     setManualOpen(true);
   }
 
-  /* ─── Unlock Remarks ─── */
-  async function unlockRemarks() {
-    setUnlockError("");
-    const pwd = String(unlockPwd || "");
-    if (!pwd) return setUnlockError("Enter password");
-    const res = await fetch("/api/auth/verify-password", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: pwd }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) return setUnlockError(data.error || "Wrong password");
-    setRemarksUnlocked(true); setUnlockOpen(false); setUnlockPwd("");
-  }
-
-  /* ─── Submit ─── */
   async function submitFinal() {
     setApiError("");
     if (submitting) return;
-    if (!validate()) return;
+    if (!validate()) { setConfirmOpen(false); return; }
 
     const commitMessage = await requestCommit({
       title: "Submit Customer",
@@ -976,8 +1394,7 @@ export default function AddCustomer({ session }) {
           submissionId, commitMessage,
           name: form.name, age: form.age, gender: form.gender,
           country: form.country, state: stateFinal, city: cityFinal,
-          address: computedAddress,
-          occupation: form.occupation,
+          address: computedAddress, occupation: form.occupation,
           approver: form.approver, maritalStatus: form.maritalStatus,
           dikshaYear: form.dikshaYear, vrindavanVisits: form.vrindavanVisits,
           firstDikshaYear: form.firstDikshaYear,
@@ -985,17 +1402,23 @@ export default function AddCustomer({ session }) {
           familyPermissionRelation: form.familyPermissionRelation,
           familyPermissionOther: form.familyPermissionRelation === "other" ? form.familyPermissionOther : "",
           remarks: form.remarks || username, remarksBy: username,
-          onionGarlic: form.onionGarlic, hasPet: form.hasPet,
-          hadTeacherBefore: form.hadTeacherBefore, nasha: form.nasha,
+          // Send null as false for API (neutral = not answered)
+          onionGarlic: form.onionGarlic === true,
+onionGarlicNote: form.onionGarlic === true ? String(form.onionGarlicNote || "").trim() : "",
+          hasPet: form.hasPet === true,
+          petNote: form.hasPet === true ? String(form.petNote || "").trim() : "",
+          hadTeacherBefore: form.hadTeacherBefore === true,
+          guruNote: form.hadTeacherBefore === true ? String(form.guruNote || "").trim() : "",
+          nasha: form.nasha === true,
+          nashaNote: form.nasha === true ? String(form.nashaNote || "").trim() : "",
+          note: String(form.note || "").trim(),
         }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { setSubmitting(false); setApiError(data.error || "Submit failed"); return; }
 
-      // Save last added
       saveLastAdded(form.name, data.rollNo);
       setLastAdded({ name: form.name, rollNo: data.rollNo, time: new Date().toISOString() });
-
       setDoneInfo({ rollNo: data.rollNo || null });
       setConfirmOpen(false); setManualOpen(false); setDoneOpen(true); setSubmitting(false);
     } catch {
@@ -1004,21 +1427,21 @@ export default function AddCustomer({ session }) {
     }
   }
 
+  // Helper for review: tri-state display
+  function triDisplay(val, note) {
+    if (val === null || val === undefined) return "Not Answered";
+    if (val === true) return `YES${note ? ` — ${note}` : ""}`;
+    return "NO";
+  }
+
   /* ═══════════════════════════════════════════════
      RENDER
      ═══════════════════════════════════════════════ */
 
   return (
     <div>
-      {/* ─── Entry Point (replaces ugly header) ─── */}
       {!manualOpen && !doneOpen && (
-        <EntryCard
-          onStart={openFresh}
-          onResume={openResumeDraft}
-          hasDraft={hasDraft}
-          lastAdded={lastAdded}
-          c={c}
-        />
+        <EntryCard onStart={openFresh} onResume={openResumeDraft} hasDraft={hasDraft} lastAdded={lastAdded} c={c} />
       )}
 
       {/* ═══ FORM MODAL ═══ */}
@@ -1031,131 +1454,139 @@ export default function AddCustomer({ session }) {
         maxWidth="max-w-5xl"
         disableBackdropClose
       >
-        <div className="text-[10px] font-mono mb-3" style={{ color: c.subId }}>
+        <div className="text-[10px] max-md:text-[9px] font-mono mb-3 max-md:mb-2" style={{ color: c.subId }}>
           ID: {submissionId || "—"}
         </div>
 
         <ErrorBanner message={apiError} c={c} />
 
-        <div className="grid sm:grid-cols-2 gap-3">
+        <div className="space-y-3 max-md:space-y-2.5">
 
+          {/* ── Personal ── */}
           <SectionHeader icon="👤" label="Personal Information" c={c} />
 
           <Field label="Name" required value={form.name} onChange={(v) => upd("name", v)}
             error={fieldErrors.name} c={c} placeholder="Full name..." />
 
-          <Field label="Age" required value={form.age} onChange={(v) => upd("age", v)}
-            error={fieldErrors.age} c={c} placeholder="e.g. 28" type="number" />
+          <div className="grid sm:grid-cols-2 gap-3 max-md:gap-2.5">
+            <Field label="Age" required value={form.age} onChange={(v) => upd("age", v)}
+              error={fieldErrors.age} c={c} placeholder="e.g. 28" type="number" />
 
-          <Select label="Gender" value={form.gender} onChange={(v) => upd("gender", v)} c={c}>
-            <option value="MALE">MALE</option>
-            <option value="FEMALE">FEMALE</option>
-            <option value="OTHER">OTHER</option>
-          </Select>
+            <NativeSelect label="Gender" value={form.gender} onChange={(v) => upd("gender", v)} c={c}>
+              <option value="MALE">MALE</option>
+              <option value="FEMALE">FEMALE</option>
+              <option value="OTHER">OTHER</option>
+            </NativeSelect>
+          </div>
 
           <OccupationField value={form.occupation} onChange={(v) => upd("occupation", v)} c={c} />
 
-          <Select label="Marital Status" value={form.maritalStatus}
-            onChange={(v) => upd("maritalStatus", v)} options={MARITAL} c={c} />
+          <div className="grid sm:grid-cols-2 gap-3 max-md:gap-2.5">
+            <SearchableSelect label="Marital Status" value={form.maritalStatus}
+              onChange={(v) => upd("maritalStatus", v)} options={MARITAL} c={c} placeholder="Search status..." />
 
-          <Select label="Approver" value={form.approver}
-            onChange={(v) => upd("approver", v)} options={APPROVERS} c={c} />
+            <SearchableSelect label="Approver" value={form.approver}
+              onChange={(v) => upd("approver", v)} options={APPROVERS} c={c} placeholder="Search approver..." />
+          </div>
 
           {/* ── Address ── */}
           <SectionHeader icon="📍" label="Address" c={c} />
 
-          <Select label="Country" required value={form.country}
+          <SearchableSelect
+            label="Country" required value={form.country}
             error={fieldErrors.country} c={c}
+            disabled={countriesLoading}
+            placeholder="Search country..."
+            options={countriesLoading ? [] : [
+              { value: "India", label: "🇮🇳 India (Default)" },
+              ...countries.filter((x) => x.name !== "India").map((co) => ({
+                value: co.name, label: `${co.flag ? co.flag + " " : ""}${co.name}`,
+              })),
+            ]}
             onChange={(v) => {
               setForm((p) => ({ ...p, country: v, state: "", stateOther: "", city: "", cityOther: "" }));
               setFieldErrors((p) => ({ ...p, country: "" }));
             }}
-            disabled={countriesLoading}
-          >
-            {countriesLoading ? (
-              <option value="">Loading countries...</option>
-            ) : (
-              <>
-                <option value="">Select Country...</option>
-                <option value="India">🇮🇳 India (Default)</option>
-                <option disabled>──────────────</option>
-                {countries.filter((x) => x.name !== "India").map((co) => (
-                  <option key={co.code} value={co.name}>
-                    {co.flag ? `${co.flag} ` : ""}{co.name}
-                  </option>
-                ))}
-              </>
-            )}
-          </Select>
+          />
 
-          <div>
-            <Select label="State" required value={form.state}
-              error={fieldErrors.state} c={c}
-              disabled={!form.country || stateLoading}
-              onChange={(v) => {
-                if (v === "__OTHER__") {
-                  setForm((p) => ({ ...p, state: "__OTHER__", stateOther: p.stateOther || "", city: "__OTHER__", cityOther: "" }));
-                } else {
-                  setForm((p) => ({ ...p, state: v, stateOther: "", city: "", cityOther: "" }));
-                }
-                setFieldErrors((p) => ({ ...p, state: "" }));
-              }}
-            >
-              <option value="">
-                {!form.country ? "Select country first..." : stateLoading ? "Loading states..." : "Select..."}
-              </option>
-              {states.map((s, i) => <option key={`${s}_${i}`} value={s}>{s}</option>)}
-              <option value="__OTHER__">Enter State Manually</option>
-            </Select>
-            {stateLoading && (
-              <div className="flex items-center gap-2 mt-1.5">
-                <LoadingSpinner c={c} size={14} />
-                <span className="text-[10px]" style={{ color: c.hintColor }}>Loading states...</span>
-              </div>
-            )}
-            {form.state === "__OTHER__" && (
-              <input value={form.stateOther}
-                onChange={(e) => { upd("stateOther", e.target.value); setFieldErrors((p) => ({ ...p, state: "" })); }}
-                placeholder="Type state name..."
-                className="mt-2 w-full rounded-2xl border px-4 py-3 text-[13px] outline-none transition-all duration-200"
-                style={{ background: c.inputBg, borderColor: c.inputBorder, color: c.inputText }}
-              />
-            )}
-          </div>
-
-          <div>
-            <Select label="City" required value={form.city}
-              error={fieldErrors.city} c={c}
-              disabled={!form.state || form.state === "__OTHER__" || cityLoading}
-              onChange={(v) => { upd("city", v); upd("cityOther", ""); }}
-            >
-              <option value="">
-                {!form.state ? "Select..." : form.state === "__OTHER__" ? "Manual state" : cityLoading ? "Loading..." : "Select..."}
-              </option>
-              {cities.map((ci, i) => <option key={`${ci}_${i}`} value={ci}>{ci}</option>)}
-              <option value="__OTHER__">Other</option>
-            </Select>
-            {cityLoading && (
-              <div className="flex items-center gap-2 mt-1.5">
-                <LoadingSpinner c={c} size={14} />
-                <span className="text-[10px]" style={{ color: c.hintColor }}>Loading cities...</span>
-              </div>
-            )}
-            {(form.state === "__OTHER__" || form.city === "__OTHER__") && (
-              <input value={form.cityOther}
-                onChange={(e) => {
-                  setForm((p) => ({ ...p, city: "__OTHER__", cityOther: e.target.value }));
-                  setFieldErrors((p) => ({ ...p, city: "" }));
+          <div className="grid sm:grid-cols-2 gap-3 max-md:gap-2.5">
+            <div>
+              <SearchableSelect
+                label="State" required value={form.state}
+                error={fieldErrors.state} c={c}
+                disabled={!form.country || stateLoading}
+                placeholder="Search state..."
+                options={[
+                  ...states.map((s) => ({ value: s, label: s })),
+                  { value: "__OTHER__", label: "✏️ Enter Manually" },
+                ]}
+                onChange={(v) => {
+                  if (v === "__OTHER__") {
+                    setForm((p) => ({ ...p, state: "__OTHER__", stateOther: p.stateOther || "", city: "__OTHER__", cityOther: "" }));
+                  } else {
+                    setForm((p) => ({ ...p, state: v, stateOther: "", city: "", cityOther: "" }));
+                  }
+                  setFieldErrors((p) => ({ ...p, state: "" }));
                 }}
-                placeholder="Type city name..."
-                className="mt-2 w-full rounded-2xl border px-4 py-3 text-[13px] outline-none transition-all duration-200"
-                style={{ background: c.inputBg, borderColor: c.inputBorder, color: c.inputText }}
               />
-            )}
+              {stateLoading && (
+                <div className="flex items-center gap-2 mt-1.5 ml-[142px] max-md:ml-0">
+                  <LoadingSpinner c={c} size={14} />
+                  <span className="text-[10px] max-md:text-[9px]" style={{ color: c.hintColor }}>Loading states...</span>
+                </div>
+              )}
+              {form.state === "__OTHER__" && (
+                <div className="mt-2 ml-[142px] max-md:ml-0">
+                  <input value={form.stateOther}
+                    onChange={(e) => { upd("stateOther", e.target.value); setFieldErrors((p) => ({ ...p, state: "" })); }}
+                    placeholder="Type state name..."
+                    className="w-full rounded-2xl max-md:rounded-xl border px-4 max-md:px-3.5 py-3 max-md:py-2.5 text-[13px] outline-none transition-all duration-200"
+                    style={{ background: c.inputBg, borderColor: c.inputBorder, color: c.inputText }}
+                    onFocusCapture={(e) => { e.currentTarget.style.boxShadow = `0 0 0 3px ${c.inputFocusRing}`; e.currentTarget.style.borderColor = c.inputBorderFocus; }}
+                    onBlurCapture={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.borderColor = c.inputBorder; }}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div>
+              <SearchableSelect
+                label="City" required value={form.city}
+                error={fieldErrors.city} c={c}
+                disabled={!form.state || form.state === "__OTHER__" || cityLoading}
+                placeholder="Search city..."
+                options={[
+                  ...cities.map((ci) => ({ value: ci, label: ci })),
+                  { value: "__OTHER__", label: "✏️ Other" },
+                ]}
+                onChange={(v) => { upd("city", v); upd("cityOther", ""); }}
+              />
+              {cityLoading && (
+                <div className="flex items-center gap-2 mt-1.5 ml-[142px] max-md:ml-0">
+                  <LoadingSpinner c={c} size={14} />
+                  <span className="text-[10px] max-md:text-[9px]" style={{ color: c.hintColor }}>Loading cities...</span>
+                </div>
+              )}
+              {(form.state === "__OTHER__" || form.city === "__OTHER__") && (
+                <div className="mt-2 ml-[142px] max-md:ml-0">
+                  <input value={form.cityOther}
+                    onChange={(e) => {
+                      setForm((p) => ({ ...p, city: "__OTHER__", cityOther: e.target.value }));
+                      setFieldErrors((p) => ({ ...p, city: "" }));
+                    }}
+                    placeholder="Type city name..."
+                    className="w-full rounded-2xl max-md:rounded-xl border px-4 max-md:px-3.5 py-3 max-md:py-2.5 text-[13px] outline-none transition-all duration-200"
+                    style={{ background: c.inputBg, borderColor: c.inputBorder, color: c.inputText }}
+                    onFocusCapture={(e) => { e.currentTarget.style.boxShadow = `0 0 0 3px ${c.inputFocusRing}`; e.currentTarget.style.borderColor = c.inputBorderFocus; }}
+                    onBlurCapture={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.borderColor = c.inputBorder; }}
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="sm:col-span-2">
-            <div className="text-[10px] flex items-center gap-2" style={{ color: c.hintColor }}>
+            <div className="text-[10px] max-md:text-[9px] flex items-center gap-2 ml-[142px] max-md:ml-0" style={{ color: c.hintColor }}>
               📫 Computed: <span className="font-semibold" style={{ color: c.t2 }}>{computedAddress || "—"}</span>
             </div>
           </div>
@@ -1163,119 +1594,195 @@ export default function AddCustomer({ session }) {
           {/* ── Diksha ── */}
           <SectionHeader icon="🙏" label="Diksha Information" c={c} />
 
-          <Field label="Diksha ke liye kab aaye (Year)" type="number" value={form.dikshaYear}
-            onChange={(v) => upd("dikshaYear", v)} c={c} placeholder="e.g. 2020" />
+          <Field label="सत्संग श्रवण" type="number" value={form.dikshaYear}
+            onChange={(v) => upd("dikshaYear", v)} c={c} placeholder="e.g. 2020"
+            error={fieldErrors.dikshaYear} hint={`${MIN_YEAR} – ${CURRENT_YEAR}`} />
 
-          <Field label="Kitni baar aye Vrindavan" type="number" value={form.vrindavanVisits}
-            onChange={(v) => upd("vrindavanVisits", v)} c={c} placeholder="Enter number" />
+          <div className="grid sm:grid-cols-2 gap-3 max-md:gap-2.5">
+            <Field label="वृंदावन कितनी बार आये" type="number" value={form.vrindavanVisits}
+              onChange={(v) => upd("vrindavanVisits", v)} c={c} placeholder="Number"
+              error={fieldErrors.vrindavanVisits} hint="0 or more" />
 
-          <Field label="Pratham upastithi (Year)" type="number" value={form.firstDikshaYear}
-            onChange={(v) => upd("firstDikshaYear", v)} c={c} placeholder="e.g. 2021" />
+            <Field label="दीक्षा प्रथम उपस्थिति" type="number" value={form.firstDikshaYear}
+              onChange={(v) => upd("firstDikshaYear", v)} c={c} placeholder="e.g. 2021"
+              error={fieldErrors.firstDikshaYear} hint={`${MIN_YEAR} – ${CURRENT_YEAR}`} />
+          </div>
 
           {/* ── Family ── */}
           <SectionHeader icon="👨‍👩‍👧" label="Family & Permissions" c={c} />
 
-          <div>
-            <Select label="Family Permission" value={form.familyPermissionRelation}
-              onChange={(v) => {
-                setForm((p) => ({
-                  ...p, familyPermissionRelation: v,
-                  familyPermissionOther: v === "other" ? p.familyPermissionOther : "",
-                }));
-              }} options={FAMILY_OPTIONS} c={c} />
-            {form.familyPermissionRelation === "other" && (
+          <SearchableSelect label="Family Permission" value={form.familyPermissionRelation}
+            onChange={(v) => {
+              setForm((p) => ({
+                ...p, familyPermissionRelation: v,
+                familyPermissionOther: v === "other" ? p.familyPermissionOther : "",
+              }));
+            }} options={FAMILY_OPTIONS} c={c} placeholder="Search..." />
+          {form.familyPermissionRelation === "other" && (
+            <div className="ml-[142px] max-md:ml-0">
               <input value={form.familyPermissionOther}
                 onChange={(e) => upd("familyPermissionOther", e.target.value)}
                 placeholder="Other (type here)..."
-                className="mt-2 w-full rounded-2xl border px-4 py-3 text-[13px] outline-none transition-all duration-200"
+                className="w-full rounded-2xl max-md:rounded-xl border px-4 max-md:px-3.5 py-3 max-md:py-2.5 text-[13px] outline-none transition-all duration-200"
                 style={{ background: c.inputBg, borderColor: c.inputBorder, color: c.inputText }}
+                onFocusCapture={(e) => { e.currentTarget.style.boxShadow = `0 0 0 3px ${c.inputFocusRing}`; e.currentTarget.style.borderColor = c.inputBorderFocus; }}
+                onBlurCapture={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.borderColor = c.inputBorder; }}
               />
-            )}
-          </div>
-
-          <div className="sm:col-span-2 grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5 mt-1">
-            <Toggle label="Onion/Garlic?" val={form.onionGarlic} setVal={(x) => upd("onionGarlic", x)} c={c} />
-            <Toggle label="Has Pet?" val={form.hasPet} setVal={(x) => upd("hasPet", x)} c={c} />
-            <Toggle label="Teacher Before?" val={form.hadTeacherBefore} setVal={(x) => upd("hadTeacherBefore", x)} c={c} />
-            <Toggle label="Kya Nasha Karte Ho?" val={form.nasha} setVal={(x) => upd("nasha", x)} c={c} />
-          </div>
-
-          {/* ── Remarks ── */}
-          <SectionHeader icon="📝" label="Remarks" c={c} />
-
-          <div className="sm:col-span-2">
-            <div className="flex items-center justify-between mb-1.5">
-              <div className="text-[11px] font-semibold" style={{ color: c.labelColor }}>Remarks (auto)</div>
-              <button type="button"
-                onClick={() => { setUnlockOpen(true); setUnlockError(""); }}
-                className="px-3 py-1 rounded-xl text-[11px] font-semibold border transition-all duration-200"
-                style={{ background: c.btnGhostBg, borderColor: c.btnGhostBorder, color: c.btnGhostText }}
-              >
-                🔓 Unlock
-              </button>
             </div>
-            <input value={form.remarks}
-              onChange={(e) => upd("remarks", e.target.value)}
-              readOnly={!remarksUnlocked}
-              className="w-full rounded-2xl border px-4 py-3 text-[13px] outline-none transition-all duration-200"
-              style={{
-                background: remarksUnlocked ? c.inputBg : c.inputDisabledBg,
-                borderColor: c.inputBorder,
-                color: remarksUnlocked ? c.inputText : c.inputDisabledText,
-              }}
+          )}
+
+          {/* ── Lifestyle: TRI-STATE ── */}
+          <SectionHeader icon="⚡" label="Lifestyle Questions" c={c} />
+
+          <div className="grid sm:grid-cols-2 gap-3 max-md:gap-2.5">
+
+             <TriStateCard
+  icon="🧅"
+  label="Onion / Garlic?"
+  value={form.onionGarlic}
+  onChange={(v) => { upd("onionGarlic", v); if (v !== true) upd("onionGarlicNote", ""); }}
+  c={c}
+  expandContent={
+    <div>
+      <div className="text-[10px] max-md:text-[9px] font-semibold mb-1.5" style={{ color: c.triSubLabel }}>
+        Details <span style={{ color: c.hintColor }}>(optional)</span>
+      </div>
+      <input
+        value={form.onionGarlicNote || ""}
+        onChange={(e) => upd("onionGarlicNote", e.target.value)}
+        placeholder="e.g. Only onion, Both, Garlic only..."
+        className="w-full rounded-xl max-md:rounded-lg border px-3 max-md:px-2.5 py-2.5 max-md:py-2 text-[12px] max-md:text-[11px] outline-none transition-all duration-200"
+        style={{ background: c.inputBg, borderColor: c.inputBorder, color: c.inputText }}
+        onFocusCapture={(e) => { e.currentTarget.style.boxShadow = `0 0 0 3px ${c.inputFocusRing}`; e.currentTarget.style.borderColor = c.inputBorderFocus; }}
+        onBlurCapture={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.borderColor = c.inputBorder; }}
+      />
+    </div>
+  }
+/>           {/* 🐾 Pet — expand on YES */}
+            <TriStateCard
+              icon="🐾"
+              label="Has Pet?"
+              value={form.hasPet}
+              onChange={(v) => { upd("hasPet", v); if (v !== true) upd("petNote", ""); }}
+              c={c}
+              expandContent={
+                <div>
+                  <div className="text-[10px] max-md:text-[9px] font-semibold mb-1.5" style={{ color: c.triSubLabel }}>
+                    Which animal / pet?
+                  </div>
+                  <SuggestInputInline
+                    value={form.petNote}
+                    onChange={(v) => upd("petNote", v)}
+                    suggestions={PET_SUGGESTIONS}
+                    placeholder="e.g. Dog, Cat, Cow..."
+                    c={c}
+                  />
+                </div>
+              }
             />
-            <div className="text-[10px] mt-1" style={{ color: c.hintColor }}>
-              Default: <b style={{ color: c.t2 }}>{username}</b> • Unlock ke baad edit
+
+            {/* 🙏 GuruDev — expand on YES */}
+            <TriStateCard
+              icon="🙏"
+              label="Have before GuruDev?"
+              value={form.hadTeacherBefore}
+              onChange={(v) => { upd("hadTeacherBefore", v); if (v !== true) upd("guruNote", ""); }}
+              c={c}
+              expandContent={
+                <div>
+                  <div className="text-[10px] max-md:text-[9px] font-semibold mb-1.5" style={{ color: c.triSubLabel }}>
+                    Details <span style={{ color: c.hintColor }}>(optional)</span>
+                  </div>
+                  <input
+                    value={form.guruNote}
+                    onChange={(e) => upd("guruNote", e.target.value)}
+                    placeholder="Previous guru/teacher details..."
+                    className="w-full rounded-xl max-md:rounded-lg border px-3 max-md:px-2.5 py-2.5 max-md:py-2 text-[12px] max-md:text-[11px] outline-none transition-all duration-200"
+                    style={{ background: c.inputBg, borderColor: c.inputBorder, color: c.inputText }}
+                    onFocusCapture={(e) => { e.currentTarget.style.boxShadow = `0 0 0 3px ${c.inputFocusRing}`; e.currentTarget.style.borderColor = c.inputBorderFocus; }}
+                    onBlurCapture={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.borderColor = c.inputBorder; }}
+                  />
+                </div>
+              }
+            />
+
+            {/* 🚬 Nasha — expand on YES */}
+            <TriStateCard
+              icon="🚬"
+              label="Kya Nasha Karte Ho?"
+              value={form.nasha}
+              onChange={(v) => { upd("nasha", v); if (v !== true) upd("nashaNote", ""); }}
+              c={c}
+              expandContent={
+                <div>
+                  <div className="text-[10px] max-md:text-[9px] font-semibold mb-1.5" style={{ color: c.triSubLabel }}>
+                    Details <span style={{ color: c.hintColor }}>(optional)</span>
+                  </div>
+                  <input
+                    value={form.nashaNote}
+                    onChange={(e) => upd("nashaNote", e.target.value)}
+                    placeholder="Type of nasha..."
+                    className="w-full rounded-xl max-md:rounded-lg border px-3 max-md:px-2.5 py-2.5 max-md:py-2 text-[12px] max-md:text-[11px] outline-none transition-all duration-200"
+                    style={{ background: c.inputBg, borderColor: c.inputBorder, color: c.inputText }}
+                    onFocusCapture={(e) => { e.currentTarget.style.boxShadow = `0 0 0 3px ${c.inputFocusRing}`; e.currentTarget.style.borderColor = c.inputBorderFocus; }}
+                    onBlurCapture={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.borderColor = c.inputBorder; }}
+                  />
+                </div>
+              }
+            />
+          </div>
+
+          {/* ── Note ── */}
+          <SectionHeader icon="📝" label="Note" c={c} />
+
+          <div>
+            <div className="flex items-start gap-3 max-md:flex-col max-md:items-stretch max-md:gap-1">
+              <div className="text-[12px] max-md:text-[11px] font-semibold min-w-[130px] max-md:min-w-0 flex-shrink-0 pt-3 max-md:pt-0"
+                style={{ color: c.labelColor }}>
+                Note <span style={{ color: c.hintColor, fontWeight: 400 }}>(optional)</span>
+              </div>
+              <textarea
+                value={form.note}
+                onChange={(e) => upd("note", e.target.value)}
+                placeholder="Any additional notes about this customer..."
+                rows={3}
+                className="flex-1 w-full rounded-2xl max-md:rounded-xl border px-4 max-md:px-3.5 py-3 max-md:py-2.5 text-[13px] outline-none transition-all duration-200 resize-none"
+                style={{ background: c.noteBg, borderColor: c.noteBorder, color: c.noteText }}
+                onFocusCapture={(e) => { e.currentTarget.style.boxShadow = `0 0 0 3px ${c.inputFocusRing}`; e.currentTarget.style.borderColor = c.inputBorderFocus; }}
+                onBlurCapture={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.borderColor = c.noteBorder; }}
+              />
+            </div>
+            <div className="text-[10px] max-md:text-[9px] mt-1 ml-[142px] max-md:ml-0" style={{ color: c.hintColor }}>
+              Free text — saved with customer record.
             </div>
           </div>
+
+          {/* ── Form Creator ── */}
+          <SectionHeader icon="✍️" label="Form Creator" c={c} />
+
+          <InlineRemarksUnlock
+            remarksUnlocked={remarksUnlocked}
+            formCreator={form.remarks}
+            onFormCreatorChange={(v) => upd("remarks", v)}
+            username={username}
+            onUnlock={() => setRemarksUnlocked(true)}
+            c={c}
+          />
         </div>
 
         {/* Actions */}
-        <div className="mt-6 flex gap-3">
+        <div className="mt-6 max-md:mt-4 flex gap-3 max-md:gap-2">
           <button type="button" onClick={() => setManualOpen(false)}
-            className="flex-1 px-4 py-3 rounded-2xl text-[13px] font-semibold border transition-all duration-200"
-            style={{ background: c.btnGhostBg, borderColor: c.btnGhostBorder, color: c.btnGhostText }}
-          >
-            Close
-          </button>
+            className="flex-1 px-4 py-3 max-md:py-2.5 rounded-2xl max-md:rounded-xl text-[13px] max-md:text-[12px] font-semibold border transition-all active:scale-[0.98]"
+            style={{ background: c.btnGhostBg, borderColor: c.btnGhostBorder, color: c.btnGhostText }}>Close</button>
           <button type="button" disabled={!canGoConfirm}
             onClick={() => { setApiError(""); if (!validate()) return; setConfirmOpen(true); }}
-            className="flex-1 px-4 py-3 rounded-2xl text-[13px] font-bold transition-all duration-200 disabled:opacity-40"
-            style={{ background: c.btnSolidBg, color: c.btnSolidText }}
-          >
-            Confirm →
-          </button>
+            className="flex-1 px-4 py-3 max-md:py-2.5 rounded-2xl max-md:rounded-xl text-[13px] max-md:text-[12px] font-bold transition-all disabled:opacity-40 active:scale-[0.98]"
+            style={{ background: c.btnSolidBg, color: c.btnSolidText }}>Confirm →</button>
         </div>
 
-        <div className="mt-3 text-[10px]" style={{ color: c.hintColor }}>
-          ✓ Draft auto-saved. Modal close karo — data safe rahega.
-        </div>
-      </LayerModal>
-
-      {/* ═══ UNLOCK ═══ */}
-      <LayerModal open={unlockOpen} layerName="Unlock Remarks" title="Unlock Remarks"
-        sub="Enter your password"
-        onClose={() => { setUnlockOpen(false); setUnlockPwd(""); setUnlockError(""); }}
-        maxWidth="max-w-md" disableBackdropClose
-      >
-        <ErrorBanner message={unlockError} c={c} />
-        <input type="password" value={unlockPwd}
-          onChange={(e) => setUnlockPwd(e.target.value)}
-          placeholder="Password..."
-          className="w-full rounded-2xl border px-4 py-3 text-[13px] outline-none transition-all duration-200"
-          style={{ background: c.inputBg, borderColor: c.inputBorder, color: c.inputText }}
-          onKeyDown={(e) => { if (e.key === "Enter") unlockRemarks(); }}
-        />
-        <div className="mt-3 flex gap-2">
-          <button type="button"
-            onClick={() => { setUnlockOpen(false); setUnlockPwd(""); setUnlockError(""); }}
-            className="flex-1 px-4 py-3 rounded-2xl text-[13px] font-semibold border transition-all duration-200"
-            style={{ background: c.btnGhostBg, borderColor: c.btnGhostBorder, color: c.btnGhostText }}
-          >Cancel</button>
-          <button type="button" onClick={unlockRemarks}
-            className="flex-1 px-4 py-3 rounded-2xl text-[13px] font-bold transition-all duration-200"
-            style={{ background: c.btnSolidBg, color: c.btnSolidText }}
-          >Unlock</button>
+        <div className="mt-3 max-md:mt-2 text-[10px] max-md:text-[9px]" style={{ color: c.hintColor }}>
+          ✓ Draft auto-saved. Close safely — data is safe.
         </div>
       </LayerModal>
 
@@ -1285,38 +1792,58 @@ export default function AddCustomer({ session }) {
         maxWidth="max-w-3xl" disableBackdropClose
       >
         <ErrorBanner message={apiError} c={c} />
-        <div className="rounded-3xl border overflow-hidden"
-          style={{ background: c.reviewBg, borderColor: c.reviewBorder }}
-        >
-          {[
-            ["Name", form.name], ["Age", form.age], ["Gender", form.gender],
-            ["Occupation", form.occupation], ["Address", computedAddress],
-            ["Marital Status", form.maritalStatus], ["Approver", form.approver],
-            ["Diksha Year", form.dikshaYear], ["Vrindavan Visits", form.vrindavanVisits],
-            ["First Diksha Year", form.firstDikshaYear],
-            ["Family Permission", form.familyPermissionRelation || "NO"],
-            ...(form.familyPermissionRelation === "other" ? [["Family Other", form.familyPermissionOther]] : []),
-            ["Onion/Garlic", form.onionGarlic ? "YES" : "NO"],
-            ["Has Pet", form.hasPet ? "YES" : "NO"],
-            ["Teacher Before", form.hadTeacherBefore ? "YES" : "NO"],
-            ["Nasha", form.nasha ? "YES" : "NO"],
-            ["Remarks", form.remarks],
-          ].map(([k, v], i) => (
-            <ReviewLine key={k} k={k} v={v} c={c} alt={i % 2 === 1} />
-          ))}
+        <div className="rounded-3xl max-md:rounded-2xl border overflow-hidden"
+          style={{ background: c.reviewBg, borderColor: c.reviewBorder }}>
+          <ReviewSectionHeader icon="👤" label="Personal Information" c={c} />
+          <ReviewLine k="Name" v={form.name} c={c} alt={false} />
+          <ReviewLine k="Age" v={form.age} c={c} alt />
+          <ReviewLine k="Gender" v={form.gender} c={c} alt={false} />
+          <ReviewLine k="Occupation" v={form.occupation} c={c} alt />
+          <ReviewLine k="Marital Status" v={form.maritalStatus} c={c} alt={false} />
+          <ReviewLine k="Approver" v={form.approver} c={c} alt />
+
+          <ReviewSectionHeader icon="📍" label="Address" c={c} />
+          <ReviewLine k="Address" v={computedAddress} c={c} alt={false} />
+
+          <ReviewSectionHeader icon="🙏" label="Diksha Information" c={c} />
+          <ReviewLine k="Diksha Year" v={form.dikshaYear} c={c} alt={false} />
+          <ReviewLine k="Vrindavan Visits" v={form.vrindavanVisits} c={c} alt />
+          <ReviewLine k="First Diksha Year" v={form.firstDikshaYear} c={c} alt={false} />
+
+          <ReviewSectionHeader icon="👨‍👩‍👧" label="Family & Permissions" c={c} />
+          <ReviewLine k="Family Permission" v={form.familyPermissionRelation || "—"} c={c} alt={false} />
+          {form.familyPermissionRelation === "other" && (
+            <ReviewLine k="Family Other" v={form.familyPermissionOther} c={c} alt />
+          )}
+
+          <ReviewSectionHeader icon="⚡" label="Lifestyle Questions" c={c} />
+    <ReviewLine k="🧅 Onion/Garlic" v={triDisplay(form.onionGarlic, form.onionGarlicNote)} c={c} alt={false} />      
+    <ReviewLine k="🐾 Has Pet" v={triDisplay(form.hasPet, form.petNote)} c={c} alt />
+          <ReviewLine k="🙏 Before GuruDev" v={triDisplay(form.hadTeacherBefore, form.guruNote)} c={c} alt={false} />
+          <ReviewLine k="🚬 Nasha" v={triDisplay(form.nasha, form.nashaNote)} c={c} alt />
+
+          {String(form.note || "").trim() && (
+            <>
+              <ReviewSectionHeader icon="📝" label="Note" c={c} />
+              <div className="px-4 max-md:px-3 py-3 max-md:py-2">
+                <div className="text-[12px] max-md:text-[11px] whitespace-pre-wrap rounded-xl max-md:rounded-lg p-3 max-md:p-2.5"
+                  style={{ background: c.reviewRowAlt, color: c.reviewVal, border: `1px solid ${c.reviewBorder}` }}>{form.note}</div>
+              </div>
+            </>
+          )}
+
+          <ReviewSectionHeader icon="✍️" label="Form Creator" c={c} />
+          <ReviewLine k="Creator" v={form.remarks} c={c} alt={false} />
         </div>
-        <div className="mt-5 flex gap-3">
+
+        <div className="mt-5 max-md:mt-3 flex gap-3 max-md:gap-2">
           <button type="button" onClick={() => setConfirmOpen(false)}
-            className="flex-1 px-4 py-3 rounded-2xl text-[13px] font-semibold border transition-all duration-200"
-            style={{ background: c.btnGhostBg, borderColor: c.btnGhostBorder, color: c.btnGhostText }}
-          >← Edit</button>
+            className="flex-1 px-4 py-3 max-md:py-2.5 rounded-2xl max-md:rounded-xl text-[13px] max-md:text-[12px] font-semibold border transition-all active:scale-[0.98]"
+            style={{ background: c.btnGhostBg, borderColor: c.btnGhostBorder, color: c.btnGhostText }}>← Edit</button>
           <button type="button" onClick={submitFinal} disabled={submitting}
-            className="flex-1 px-4 py-3 rounded-2xl text-[13px] font-bold transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
-            style={{ background: c.btnSolidBg, color: c.btnSolidText }}
-          >
-            {submitting ? (
-              <><LoadingSpinner c={{ loadingDot: c.btnSolidText }} size={16} /> Submitting...</>
-            ) : "Submit (Commit)"}
+            className="flex-1 px-4 py-3 max-md:py-2.5 rounded-2xl max-md:rounded-xl text-[13px] max-md:text-[12px] font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98]"
+            style={{ background: c.btnSolidBg, color: c.btnSolidText }}>
+            {submitting ? (<><LoadingSpinner c={{ loadingDot: c.btnSolidText }} size={16} /> Submitting...</>) : "Submit (Commit)"}
           </button>
         </div>
       </LayerModal>
@@ -1327,29 +1854,25 @@ export default function AddCustomer({ session }) {
         onClose={() => { setDoneOpen(false); resetAll(); }}
         maxWidth="max-w-2xl" disableBackdropClose
       >
-        <div className="rounded-3xl border p-8 text-center"
-          style={{ background: c.doneBg, borderColor: c.cardBorder }}
-        >
-          <div className="w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4"
-            style={{ background: c.accG }}
-          >
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+        <div className="rounded-3xl max-md:rounded-2xl border p-8 max-md:p-5 text-center"
+          style={{ background: c.doneBg, borderColor: c.cardBorder }}>
+          <div className="w-16 h-16 max-md:w-14 max-md:h-14 rounded-full mx-auto flex items-center justify-center mb-4 max-md:mb-3"
+            style={{ background: c.accG }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="max-md:w-6 max-md:h-6">
               <path d="M5 13l4 4L19 7" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-          <div className="text-2xl font-black" style={{ color: c.t1 }}>Done!</div>
-          <div className="text-[13px] mt-1" style={{ color: c.t3 }}>Customer created successfully.</div>
-          <div className="mt-5 rounded-2xl border p-5 inline-block min-w-[160px]"
-            style={{ background: c.inputBg, borderColor: c.cardBorder }}
-          >
-            <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: c.t3 }}>Roll No</div>
-            <div className="text-4xl font-black mt-1" style={{ color: c.doneAccent }}>{doneInfo.rollNo || "—"}</div>
+          <div className="text-2xl max-md:text-xl font-black" style={{ color: c.t1 }}>Done!</div>
+          <div className="text-[13px] max-md:text-[12px] mt-1" style={{ color: c.t3 }}>Customer created successfully.</div>
+          <div className="mt-5 max-md:mt-4 rounded-2xl max-md:rounded-xl border p-5 max-md:p-4 inline-block min-w-[140px]"
+            style={{ background: c.inputBg, borderColor: c.cardBorder }}>
+            <div className="text-[10px] max-md:text-[9px] font-bold uppercase tracking-widest" style={{ color: c.t3 }}>Roll No</div>
+            <div className="text-4xl max-md:text-3xl font-black mt-1" style={{ color: c.doneAccent }}>{doneInfo.rollNo || "—"}</div>
           </div>
-          <div className="mt-6">
+          <div className="mt-6 max-md:mt-4">
             <button type="button" onClick={() => { setDoneOpen(false); resetAll(); }}
-              className="px-8 py-3 rounded-2xl text-[13px] font-bold transition-all duration-200"
-              style={{ background: c.btnSolidBg, color: c.btnSolidText }}
-            >Close</button>
+              className="px-8 max-md:px-6 py-3 max-md:py-2.5 rounded-2xl max-md:rounded-xl text-[13px] max-md:text-[12px] font-bold transition-all active:scale-[0.98]"
+              style={{ background: c.btnSolidBg, color: c.btnSolidText }}>Close</button>
           </div>
         </div>
       </LayerModal>
