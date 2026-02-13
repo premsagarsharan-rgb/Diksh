@@ -731,7 +731,7 @@ export default function DashboardShell({ session }) {
         {/* Greeting */}
         <div className="mb-9 max-md:mb-5">
           <div className="text-[13px] max-md:text-[12px] font-medium mb-1" style={{ color: c.t3 }}>
-            {greeting}, {session.username}
+            {greeting}, {session.username} Sakhi
           </div>
           <div
             className="text-[32px] max-md:text-[22px] font-black tracking-[-0.5px] flex items-center gap-3 flex-wrap"
